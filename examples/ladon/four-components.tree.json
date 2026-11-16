@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "Ladon: Task, Data, Modeling, Evaluation",
+    "output": "four-components.html",
+    "quality_profile": "showcase"
+  },
+  "layout": { "direction": "right" },
+  "nodes": [
+    { "id": "root", "label": "Ladon", "sublabel": "frozen encoder, small heads" },
+
+    { "id": "task", "label": "Task", "parent": "root" },
+    { "id": "problem", "label": "Problem definition", "parent": "task", "collapsed": true },
+    { "id": "t-kind", "label": "Three stages", "parent": "problem", "sublabel": "pretrain, mid-train, probe", "collapsed": true },
+    { "id": "t-kind-d1", "label": "Only the probe is refit", "parent": "t-kind", "sublabel": "per task, on embeddings" },
+    { "id": "t-kind-d2", "label": "Heads are discarded", "parent": "t-kind", "sublabel": "after mid-training ends" },
+    { "id": "t-in", "label": "Input", "parent": "problem", "sublabel": "bulk RNA-seq, gene level" },
+    { "id": "t-cov", "label": "Clinical text too", "parent": "problem", "sublabel": "age, sex, stage where given" },
+    { "id": "t-out", "label": "Outputs", "parent": "problem", "sublabel": "risk, response, benefit" },
+    { "id": "t-tasks", "label": "Many downstream tasks", "parent": "problem", "sublabel": "survival, isoforms, composition" },
+    { "id": "t-frozen", "label": "Encoder stays frozen", "parent": "problem", "sublabel": "no fine-tuning downstream" },
+
+    { "id": "data", "label": "Data", "parent": "root" },
+    { "id": "dataset", "label": "Dataset", "parent": "data", "collapsed": true },
+    { "id": "d-pre", "label": "Millions of bulk samples", "parent": "dataset", "sublabel": "exact count not specified" },
+    { "id": "d-sc", "label": "scBaseCount", "parent": "dataset", "sublabel": "45,000 experiments" },
+    { "id": "d-tcga", "label": "TCGA and CPTAC", "parent": "dataset", "sublabel": "2,461 and 1,128 patients" },
+    { "id": "d-trials", "label": "Eight held-out trials", "parent": "dataset", "sublabel": "six OS, three PFS readouts", "collapsed": true },
+    { "id": "d-trials-d1", "label": "Industry trial arms", "parent": "d-trials", "sublabel": "OAK, POPLAR, IMvigor, IMmotion" },
+    { "id": "d-trials-d2", "label": "Retrospective", "parent": "d-trials", "sublabel": "scored after the trial ran" },
+    { "id": "d-io", "label": "1,419 patients", "parent": "dataset", "sublabel": "33 academic cohorts" },
+    { "id": "d-sp", "label": "Human, some mouse", "parent": "dataset", "sublabel": "mouse only in scBaseCount" },
+
+    { "id": "prep", "label": "Data preparation", "parent": "data", "collapsed": true },
+    { "id": "p-quant", "label": "kallisto TPM", "parent": "prep", "sublabel": "transcripts summed to genes" },
+    { "id": "p-log", "label": "log2 of 1 plus TPM", "parent": "prep", "sublabel": "20,250 protein-coding genes" },
+    { "id": "p-leak", "label": "TCGA held out of pretraining", "parent": "prep", "sublabel": "labels withheld from encoder", "collapsed": true },
+    { "id": "p-leak-d1", "label": "Each trial excluded", "parent": "p-leak", "sublabel": "from fitting its own predictor" },
+    { "id": "p-leak-d2", "label": "Context excludes the trial", "parent": "p-leak", "sublabel": "for the in-context classifier" },
+    { "id": "p-synth", "label": "Synthetic bulks", "parent": "prep", "sublabel": "mixed from pseudobulks", "collapsed": true },
+    { "id": "p-synth-d1", "label": "Composition is known", "parent": "p-synth", "sublabel": "shares drawn, then renormalized" },
+    { "id": "p-synth-d2", "label": "2,000 PBMC mixtures", "parent": "p-synth", "sublabel": "from four reference studies" },
+    { "id": "p-std", "label": "Standardized per source", "parent": "prep", "sublabel": "training mean and SD only" },
+    { "id": "p-batch", "label": "Batch correction", "parent": "prep", "sublabel": "not specified in general" },
+
+    { "id": "modeling", "label": "Modeling", "parent": "root" },
+    { "id": "model", "label": "Model", "parent": "modeling", "collapsed": true },
+    { "id": "m-size", "label": "3 billion parameters", "parent": "model", "sublabel": "transformer encoder-decoder" },
+    { "id": "m-arch", "label": "Depth, width, heads", "parent": "model", "sublabel": "not specified" },
+    { "id": "m-rep", "label": "Mean of the latents", "parent": "model", "sublabel": "one vector per sample", "collapsed": true },
+    { "id": "m-rep-d1", "label": "Standardizing won", "parent": "m-rep", "sublabel": "over raw and PCA variants" },
+    { "id": "m-rep-d2", "label": "Dimension not given", "parent": "m-rep", "sublabel": "heads use 64 or 128 PCs" },
+    { "id": "m-cox", "label": "Ridge Cox head", "parent": "model", "sublabel": "lambda 0.3, fixed on TCGA" },
+    { "id": "m-tab", "label": "TabICL v2 head", "parent": "model", "sublabel": "response, 128 PCs", "collapsed": true },
+    { "id": "m-tab-d1", "label": "Learns in context", "parent": "m-tab", "sublabel": "other patients are the context" },
+    { "id": "m-tab-d2", "label": "Indicators appended", "parent": "m-tab", "sublabel": "cancer type and treatment" },
+    { "id": "m-benefit", "label": "Benefit head", "parent": "model", "sublabel": "ridge logistic, 12-month PFS" },
+
+    { "id": "training", "label": "Training", "parent": "modeling", "collapsed": true },
+    { "id": "tr-pre", "label": "Masked reconstruction", "parent": "training", "sublabel": "on isoform-level sequences", "collapsed": true },
+    { "id": "tr-pre-d1", "label": "Self-supervised", "parent": "tr-pre", "sublabel": "no labels needed" },
+    { "id": "tr-pre-d2", "label": "Loss formula not given", "parent": "tr-pre", "sublabel": "values appear only as plots" },
+    { "id": "tr-mid", "label": "Supervised mid-training", "parent": "training", "sublabel": "stage, age, grade, mutations" },
+    { "id": "tr-post", "label": "Post-training", "parent": "training", "sublabel": "adds a composition objective" },
+    { "id": "tr-opt", "label": "Optimizer and schedule", "parent": "training", "sublabel": "not specified" },
+    { "id": "tr-hw", "label": "Hardware", "parent": "training", "sublabel": "GPU-hours plotted, type not given" },
+    { "id": "tr-scale", "label": "Scaling has not saturated", "parent": "training", "sublabel": "over the sizes tested" },
+
+    { "id": "evaluation", "label": "Evaluation", "parent": "root" },
+    { "id": "metrics", "label": "Metrics", "parent": "evaluation", "collapsed": true },
+    { "id": "e-cidx", "label": "Uno C-index", "parent": "metrics", "sublabel": "0.61 on OAK, 699 patients", "collapsed": true },
+    { "id": "e-cidx-d1", "label": "Ranking, not calibration", "parent": "e-cidx", "sublabel": "0.5 is a coin flip" },
+    { "id": "e-cidx-d2", "label": "Censoring-weighted", "parent": "e-cidx", "sublabel": "truncated at the 70th percentile" },
+    { "id": "e-auroc", "label": "AUROC for response", "parent": "metrics", "sublabel": "averaged over six trials", "collapsed": true },
+    { "id": "e-auroc-d1", "label": "Responder is RECIST", "parent": "e-auroc", "sublabel": "complete or partial response" },
+    { "id": "e-auroc-d2", "label": "Numbers are in the figure", "parent": "e-auroc", "sublabel": "the text gives none" },
+    { "id": "e-pfs", "label": "12-month PFS gap", "parent": "metrics", "sublabel": "28% vs 6% on POPLAR" },
+    { "id": "e-r", "label": "Pearson r", "parent": "metrics", "sublabel": "0.81 median, isoform shares" },
+    { "id": "e-clin", "label": "ClinBench, 142 tasks", "parent": "metrics", "sublabel": "85 within, 57 cross-cohort" },
+
+    { "id": "protocol", "label": "Evaluation protocol", "parent": "evaluation", "collapsed": true },
+    { "id": "ep-trial", "label": "Whole trials held out", "parent": "protocol", "sublabel": "never in their own fit" },
+    { "id": "ep-split", "label": "Split at median risk", "parent": "protocol", "sublabel": "Cox stratified by arm" },
+    { "id": "ep-cv", "label": "Five-fold cross-fitting", "parent": "protocol", "sublabel": "by cohort and event status" },
+    { "id": "ep-stat", "label": "One-sided Wilcoxon", "parent": "protocol", "sublabel": "unadjusted, 2,000 bootstraps" },
+    { "id": "ep-fig", "label": "Most values are plots", "parent": "protocol", "sublabel": "no numeric tables given" },
+
+    { "id": "baselines", "label": "Baselines", "parent": "evaluation", "collapsed": true },
+    { "id": "b-fm", "label": "BulkRNABert, BulkFormer", "parent": "baselines", "sublabel": "other bulk foundation models", "collapsed": true },
+    { "id": "b-fm-d1", "label": "BulkFormer is 147M", "parent": "b-fm", "sublabel": "against Ladon's 3B" },
+    { "id": "b-fm-d2", "label": "Public checkpoints", "parent": "b-fm", "sublabel": "not retrained here" },
+    { "id": "b-dge", "label": "Differential expression", "parent": "baselines", "sublabel": "signature size by CV" },
+    { "id": "b-gsea", "label": "Hallmark GSEA", "parent": "baselines", "sublabel": "50 gene programs" },
+    { "id": "b-clin", "label": "Clinical covariates alone", "parent": "baselines", "sublabel": "chance on held-out trials" },
+    { "id": "b-pdl1", "label": "PD-L1 mRNA", "parent": "baselines", "sublabel": "CD274, the clinical standard" },
+    { "id": "b-breast", "label": "Oncotype DX, MammaPrint", "parent": "baselines", "sublabel": "genefu surrogates" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Reading the map",
+      "items": [
+        "A badge on a card means it opens further; Expand all opens everything, and arrow keys walk the tree",
+        "A node reading not specified is a fact the report never gives, not an omission here"
+      ]
+    }
+  ]
+}

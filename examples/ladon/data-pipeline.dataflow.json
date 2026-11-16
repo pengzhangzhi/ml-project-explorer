@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Ladon Data Pipeline",
+    "subtitle": "Public expression archives and single-cell runs, to the pools each evaluation is held out of",
+    "output": "data-pipeline.html",
+    "viewBox": [1000, 720],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "Public sources" },
+    { "label": "Quantify" },
+    { "label": "Training pools" },
+    { "label": "Held out" }
+  ],
+  "nodes": [
+    { "id": "bulk", "type": "database", "label": "Bulk RNA-seq", "sublabel": "millions of samples", "stage": 0, "row": 0, "width": 140, "height": 58 },
+    { "id": "cohorts", "type": "database", "label": "Clinical cohorts", "sublabel": "TCGA, CPTAC, 8 trials", "stage": 0, "row": 1, "width": 140, "height": 58 },
+    { "id": "scbase", "type": "database", "label": "scBaseCount", "sublabel": "45,000 experiments", "stage": 0, "row": 3, "width": 140, "height": 58 },
+
+    { "id": "kallisto", "type": "backend", "label": "kallisto TPM", "sublabel": "transcripts to genes", "stage": 1, "row": 1, "width": 140, "height": 58 },
+    { "id": "pseudo", "type": "backend", "label": "Pseudobulks", "sublabel": "1.5M from clusters", "stage": 1, "row": 3, "width": 140, "height": 58 },
+
+    { "id": "pretrain", "type": "database", "label": "Pretraining corpus", "sublabel": "TCGA removed", "stage": 2, "row": 0, "width": 140, "height": 58 },
+    { "id": "labeled", "type": "database", "label": "Labeled cohorts", "sublabel": "survival and response", "stage": 2, "row": 2, "width": 140, "height": 58 },
+    { "id": "synth", "type": "database", "label": "Synthetic bulks", "sublabel": "composition known", "stage": 2, "row": 3, "width": 140, "height": 58 },
+
+    { "id": "valset", "type": "cloud", "label": "Validation set", "sublabel": "never trained on", "stage": 3, "row": 0, "width": 140, "height": 58 },
+    { "id": "testtrial", "type": "cloud", "label": "Held-out trial", "sublabel": "not in its own fit", "stage": 3, "row": 2, "width": 140, "height": 58 },
+    { "id": "decontest", "type": "cloud", "label": "Deconvolution test", "sublabel": "35 samples, 17 donors", "stage": 3, "row": 3, "width": 140, "height": 58 }
+  ],
+  "flows": [
+    { "id": "f-bulk", "from": "bulk", "to": "kallisto", "label": "public samples", "classification": "no outcomes" },
+    { "id": "f-cohorts", "from": "cohorts", "to": "kallisto", "label": "patient samples", "classification": "with outcomes", "route": "straight", "labelAt": [208, 315] },
+    { "id": "f-sc", "from": "scbase", "to": "pseudo", "label": "single-cell runs", "classification": "human + mouse", "route": "straight", "labelDy": -34 },
+
+    { "id": "f-pre", "from": "kallisto", "to": "pretrain", "label": "unlabeled stream", "classification": "self-supervised", "variant": "emphasis" },
+    { "id": "f-lab", "from": "kallisto", "to": "labeled", "label": "outcome stream", "classification": "probe fitting", "variant": "emphasis" },
+    { "id": "f-syn", "from": "pseudo", "to": "synth", "label": "mixtures", "classification": "known shares", "route": "straight", "labelDy": -34 },
+
+    { "id": "f-val", "from": "pretrain", "to": "valset", "label": "fixed split", "classification": "loss curve", "route": "straight", "labelDy": -34 },
+    { "id": "f-test", "from": "labeled", "to": "testtrial", "label": "one trial out", "classification": "leave-trial-out", "variant": "emphasis", "route": "straight", "labelDy": -34 },
+    { "id": "f-decon", "from": "synth", "to": "decontest", "label": "paired study out", "classification": "real bulk", "route": "straight", "labelDy": -34 }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Two streams, one encoder",
+      "items": [
+        "The bulk archive trains the encoder with no labels at all; the labeled cohorts only ever fit the small heads on top",
+        "Single-cell runs become pseudobulks, then synthetic mixtures whose true cell-type shares are known by construction",
+        "TCGA and CPTAC outcome labels were kept out of encoder training, so their transfer results are not reading their own answers"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "What the pipeline does not pin down",
+      "items": [
+        "The pretraining corpus is described as millions of samples; no exact count, assay mix or date range is given",
+        "No general batch-correction method is named, beyond one per-gene offset for nuclear-versus-bulk libraries",
+        "Clinical covariates are free text encoded by a separate frozen model, so their coverage varies cohort to cohort"
+      ]
+    }
+  ]
+}

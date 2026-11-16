@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "TCR-SRIM Data Pipeline",
+    "subtitle": "Sequence corpus and structural corpus, from public databases to the two training losses",
+    "output": "data-pipeline.html",
+    "viewBox": [
+      1000,
+      720
+    ],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "Public sources"
+    },
+    {
+      "label": "Filtering"
+    },
+    {
+      "label": "Labeled pools"
+    },
+    {
+      "label": "Splits"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "seqdb",
+      "type": "database",
+      "label": "TCR databases",
+      "sublabel": "VDJdb · IEDB · McPAS",
+      "stage": 0,
+      "row": 0,
+      "width": 140,
+      "tag": "human + mouse",
+      "height": 58
+    },
+    {
+      "id": "tenx",
+      "type": "database",
+      "label": "10x Genomics",
+      "sublabel": "native negatives",
+      "stage": 0,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "structdb",
+      "type": "database",
+      "label": "STCRDab · TCR3d",
+      "sublabel": "solved complexes",
+      "stage": 0,
+      "row": 3,
+      "width": 140,
+      "tag": "structures",
+      "height": 58
+    },
+    {
+      "id": "seqfilter",
+      "type": "backend",
+      "label": "Completeness filter",
+      "sublabel": "CDR3a + CDR3b + peptide",
+      "stage": 1,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "structfilter",
+      "type": "backend",
+      "label": "Complex filter",
+      "sublabel": "intact CDR3, MHC split",
+      "stage": 1,
+      "row": 3,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "pairs",
+      "type": "database",
+      "label": "349,716 pairs",
+      "sublabel": "2,316 peptides · MHC-I",
+      "stage": 2,
+      "row": 0,
+      "width": 140,
+      "tag": "positives",
+      "height": 58
+    },
+    {
+      "id": "negatives",
+      "type": "backend",
+      "label": "Shuffled pairs",
+      "sublabel": "4:1 negative ratio",
+      "stage": 2,
+      "row": 1,
+      "width": 140,
+      "tag": "synthetic",
+      "height": 58
+    },
+    {
+      "id": "complexes",
+      "type": "database",
+      "label": "274 complexes",
+      "sublabel": "high resolution",
+      "stage": 2,
+      "row": 3,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "test",
+      "type": "database",
+      "label": "Test · 15,503",
+      "sublabel": "288 unseen epitopes",
+      "stage": 3,
+      "row": 0,
+      "width": 140,
+      "tag": "held out",
+      "height": 58
+    },
+    {
+      "id": "train",
+      "type": "database",
+      "label": "Train stream",
+      "sublabel": "95% · cached",
+      "stage": 3,
+      "row": 1,
+      "width": 140,
+      "tag": "supervised",
+      "height": 58
+    },
+    {
+      "id": "predicted",
+      "type": "cloud",
+      "label": "Predicted folds",
+      "sublabel": "AF3 · TCRModel2 · tFold",
+      "stage": 3,
+      "row": 2,
+      "width": 140,
+      "tag": "pLDDT proxy",
+      "height": 58
+    },
+    {
+      "id": "regset",
+      "type": "database",
+      "label": "Structure half",
+      "sublabel": "1:1 split of 274",
+      "stage": 3,
+      "row": 3,
+      "width": 140,
+      "height": 58,
+      "tag": "shapes the loss"
+    },
+    {
+      "id": "evalset",
+      "type": "database",
+      "label": "Scoring half",
+      "sublabel": "true contact distances",
+      "stage": 3,
+      "row": 4,
+      "width": 140,
+      "height": 58,
+      "tag": "scores BRHR"
+    }
+  ],
+  "flows": [
+    {
+      "id": "raw-entries",
+      "from": "seqdb",
+      "to": "seqfilter",
+      "label": "database entries",
+      "classification": "reported binders",
+      "variant": "emphasis",
+      "labelDy": -34,
+      "route": "straight"
+    },
+    {
+      "id": "tenx-entries",
+      "from": "tenx",
+      "to": "seqfilter",
+      "label": "paired reads",
+      "classification": "binders + non-binders"
+    },
+    {
+      "id": "pdb-entries",
+      "from": "structdb",
+      "to": "structfilter",
+      "label": "PDB complexes",
+      "classification": "atom coordinates",
+      "labelDy": -34,
+      "route": "straight"
+    },
+    {
+      "id": "valid-triples",
+      "from": "seqfilter",
+      "to": "pairs",
+      "label": "valid triples",
+      "classification": "deduplicated",
+      "variant": "emphasis",
+      "labelDy": -34,
+      "route": "straight"
+    },
+    {
+      "id": "shuffle",
+      "from": "pairs",
+      "to": "negatives",
+      "label": "pair shuffling",
+      "classification": "assumed non-binders",
+      "variant": "dashed"
+    },
+    {
+      "id": "kept-complexes",
+      "from": "structfilter",
+      "to": "complexes",
+      "label": "274 kept",
+      "classification": "3 folds dropped",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "test-share",
+      "from": "pairs",
+      "to": "test",
+      "label": "5%",
+      "classification": "held out",
+      "route": "straight"
+    },
+    {
+      "id": "train-share",
+      "from": "pairs",
+      "to": "train",
+      "label": "95%",
+      "classification": "sequence stream",
+      "variant": "emphasis"
+    },
+    {
+      "id": "negatives-in",
+      "from": "negatives",
+      "to": "train",
+      "label": "4:1",
+      "classification": "synthetic",
+      "variant": "dashed",
+      "route": "straight"
+    },
+    {
+      "id": "reg-half",
+      "from": "complexes",
+      "to": "regset",
+      "label": "half",
+      "classification": "1:1",
+      "route": "straight"
+    },
+    {
+      "id": "eval-half",
+      "from": "complexes",
+      "to": "evalset",
+      "label": "half",
+      "classification": "1:1"
+    },
+    {
+      "id": "refold",
+      "from": "complexes",
+      "to": "predicted",
+      "label": "re-folded",
+      "classification": "substitutes",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Sequence stream",
+      "items": [
+        "Five public databases give 349,716 paired alpha/beta TCRs against 2,316 peptides",
+        "Four negatives per positive come from shuffling pairs, so most negatives are assumed, not measured",
+        "Embeddings are computed once and read by sequence index during training"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Structural stream",
+      "items": [
+        "274 complexes split in half: one half shapes the loss, the other scores the explanations",
+        "Only the loss sees coordinates, so prediction needs sequences alone",
+        "Sharper structures pull the contact map harder, weighted by resolution"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "What the splits do not control",
+      "items": [
+        "No validation split is named, so the sweeps are reported in the metric that carries the headline",
+        "Unseen epitopes are set by edit distance, not by sequence-identity clustering",
+        "The fold predictors may have trained on the scoring-half complexes, which the authors note"
+      ]
+    }
+  ]
+}

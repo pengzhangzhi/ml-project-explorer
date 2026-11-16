@@ -1,0 +1,447 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "TCR-SRIM: Task, Data, Modeling, Evaluation",
+    "output": "four-components.html",
+    "quality_profile": "showcase"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "TCR-SRIM",
+      "sublabel": "interpretable by design"
+    },
+    {
+      "id": "task",
+      "label": "Task",
+      "parent": "root"
+    },
+    {
+      "id": "problem",
+      "label": "Problem definition",
+      "parent": "task",
+      "collapsed": true
+    },
+    {
+      "id": "t-kind",
+      "label": "Binary classification",
+      "parent": "problem",
+      "sublabel": "prediction, not generation"
+    },
+    {
+      "id": "t-in",
+      "label": "Inputs",
+      "parent": "problem",
+      "sublabel": "CDR3a, CDR3b, peptide, padded"
+    },
+    {
+      "id": "t-out",
+      "label": "Output",
+      "parent": "problem",
+      "sublabel": "binding probability, 0 to 1"
+    },
+    {
+      "id": "t-mhc",
+      "label": "MHC omitted",
+      "parent": "problem",
+      "sublabel": "most records do not have it"
+    },
+    {
+      "id": "t-struct",
+      "label": "Structures train only",
+      "parent": "problem",
+      "sublabel": "inference uses sequences"
+    },
+    {
+      "id": "t-eta",
+      "label": "Decision threshold",
+      "parent": "problem",
+      "sublabel": "not specified"
+    },
+    {
+      "id": "data",
+      "label": "Data",
+      "parent": "root"
+    },
+    {
+      "id": "dataset",
+      "label": "Dataset",
+      "parent": "data",
+      "collapsed": true
+    },
+    {
+      "id": "d-src",
+      "label": "Five databases",
+      "parent": "dataset",
+      "sublabel": "VDJdb, McPAS, IEDB, TBAdb, 10x"
+    },
+    {
+      "id": "d-pairs",
+      "label": "349,716 paired TCRs",
+      "parent": "dataset",
+      "sublabel": "29,581 CDR3a, 32,578 CDR3b"
+    },
+    {
+      "id": "d-pep",
+      "label": "2,316 peptides",
+      "parent": "dataset",
+      "sublabel": "95.7% MHC-I, 4.3% MHC-II"
+    },
+    {
+      "id": "d-sp",
+      "label": "Human and mouse",
+      "parent": "dataset",
+      "sublabel": "a few other species present"
+    },
+    {
+      "id": "d-struct",
+      "label": "274 complexes",
+      "parent": "dataset",
+      "sublabel": "STCRDab and TCR3d 2.0"
+    },
+    {
+      "id": "prep",
+      "label": "Data preparation",
+      "parent": "data",
+      "collapsed": true
+    },
+    {
+      "id": "p-filter",
+      "label": "Completeness filter",
+      "parent": "prep",
+      "sublabel": "all three sequences required"
+    },
+    {
+      "id": "p-neg",
+      "label": "Shuffled negatives",
+      "parent": "prep",
+      "sublabel": "4:1, assumed non-binders",
+      "collapsed": true
+    },
+    {
+      "id": "p-neg-d1",
+      "label": "How they are made",
+      "parent": "p-neg",
+      "sublabel": "real TCRs, wrong peptides"
+    },
+    {
+      "id": "p-neg-d2",
+      "label": "Why it matters",
+      "parent": "p-neg",
+      "sublabel": "no measured non-binders exist"
+    },
+    {
+      "id": "p-cache",
+      "label": "Cached embeddings",
+      "parent": "prep",
+      "sublabel": "computed once, read by index"
+    },
+    {
+      "id": "p-split",
+      "label": "95:5 split",
+      "parent": "prep",
+      "sublabel": "15,503 test samples"
+    },
+    {
+      "id": "p-unseen",
+      "label": "288 unseen epitopes",
+      "parent": "prep",
+      "sublabel": "by edit distance 1 to 9",
+      "collapsed": true
+    },
+    {
+      "id": "p-unseen-d1",
+      "label": "Held out by distance",
+      "parent": "p-unseen",
+      "sublabel": "edit distance 1 to 9 from train"
+    },
+    {
+      "id": "p-unseen-d2",
+      "label": "Harder than a random split",
+      "parent": "p-unseen",
+      "sublabel": "no near-duplicate peptides"
+    },
+    {
+      "id": "p-val",
+      "label": "Validation split",
+      "parent": "prep",
+      "sublabel": "not specified"
+    },
+    {
+      "id": "modeling",
+      "label": "Modeling",
+      "parent": "root"
+    },
+    {
+      "id": "model",
+      "label": "Model",
+      "parent": "modeling",
+      "collapsed": true
+    },
+    {
+      "id": "m-plm",
+      "label": "Frozen PLM",
+      "parent": "model",
+      "sublabel": "ProteinBERT 16M to ESM-2 650M",
+      "collapsed": true
+    },
+    {
+      "id": "m-plm-d1",
+      "label": "Weights never update",
+      "parent": "m-plm",
+      "sublabel": "only the layers above it train"
+    },
+    {
+      "id": "m-plm-d2",
+      "label": "Sizes 16M to 650M",
+      "parent": "m-plm",
+      "sublabel": "ProteinBERT, ESM-1b, ESM-2"
+    },
+    {
+      "id": "m-shape",
+      "label": "Embeddings n x d",
+      "parent": "model",
+      "sublabel": "n and d not specified"
+    },
+    {
+      "id": "m-fef",
+      "label": "Cross-attention",
+      "parent": "model",
+      "sublabel": "six attentions, chains first",
+      "collapsed": true
+    },
+    {
+      "id": "m-fef-d1",
+      "label": "Six attention maps",
+      "parent": "m-fef",
+      "sublabel": "each ordered pair of the three"
+    },
+    {
+      "id": "m-fef-d2",
+      "label": "Chains before peptide",
+      "parent": "m-fef",
+      "sublabel": "alpha and beta meet first"
+    },
+    {
+      "id": "m-proto",
+      "label": "Contact prototype",
+      "parent": "model",
+      "sublabel": "cosine map, threshold bank",
+      "collapsed": true
+    },
+    {
+      "id": "m-proto-d1",
+      "label": "A map, not a vector",
+      "parent": "m-proto",
+      "sublabel": "cosine per residue pair"
+    },
+    {
+      "id": "m-proto-d2",
+      "label": "Thresholds score the map",
+      "parent": "m-proto",
+      "sublabel": "a learned bank of cut-offs"
+    },
+    {
+      "id": "m-max",
+      "label": "Max of two pairings",
+      "parent": "model",
+      "sublabel": "one chain usually dominates"
+    },
+    {
+      "id": "m-explain",
+      "label": "Explanation is built in",
+      "parent": "model",
+      "sublabel": "no attribution step needed"
+    },
+    {
+      "id": "m-size",
+      "label": "Depth and parameters",
+      "parent": "model",
+      "sublabel": "not specified"
+    },
+    {
+      "id": "training",
+      "label": "Training",
+      "parent": "modeling",
+      "collapsed": true
+    },
+    {
+      "id": "tr-loss",
+      "label": "Two-term loss",
+      "parent": "training",
+      "sublabel": "cross-entropy plus structure"
+    },
+    {
+      "id": "tr-struct",
+      "label": "Structure term",
+      "parent": "training",
+      "sublabel": "squared error vs true contacts",
+      "collapsed": true
+    },
+    {
+      "id": "tr-struct-d1",
+      "label": "Trains the map itself",
+      "parent": "tr-struct",
+      "sublabel": "not an extra output head"
+    },
+    {
+      "id": "tr-struct-d2",
+      "label": "Only 274 complexes",
+      "parent": "tr-struct",
+      "sublabel": "3 to 5 epochs per cycle"
+    },
+    {
+      "id": "tr-weight",
+      "label": "Resolution weighting",
+      "parent": "training",
+      "sublabel": "sharper structures weigh more"
+    },
+    {
+      "id": "tr-opt",
+      "label": "AdamW",
+      "parent": "training",
+      "sublabel": "lr 1e-3, dropout 0.2, batch 512"
+    },
+    {
+      "id": "tr-cycle",
+      "label": "150 epochs",
+      "parent": "training",
+      "sublabel": "3 to 5 structure epochs each"
+    },
+    {
+      "id": "tr-hw",
+      "label": "Three servers",
+      "parent": "training",
+      "sublabel": "A2000, RTX 3090, RTX 6000 Ada"
+    },
+    {
+      "id": "tr-ckpt",
+      "label": "Checkpoint rule",
+      "parent": "training",
+      "sublabel": "not specified"
+    },
+    {
+      "id": "evaluation",
+      "label": "Evaluation",
+      "parent": "root"
+    },
+    {
+      "id": "metrics",
+      "label": "Metrics",
+      "parent": "evaluation",
+      "collapsed": true
+    },
+    {
+      "id": "e-auc",
+      "label": "Epitope-wise ROC-AUC",
+      "parent": "metrics",
+      "sublabel": "best k of 288 epitopes",
+      "collapsed": true
+    },
+    {
+      "id": "e-auc-d1",
+      "label": "One score per epitope",
+      "parent": "e-auc",
+      "sublabel": "TCRs ranked for one peptide"
+    },
+    {
+      "id": "e-auc-d2",
+      "label": "Best k are averaged",
+      "parent": "e-auc",
+      "sublabel": "the headline table takes 100"
+    },
+    {
+      "id": "e-pool",
+      "label": "Pooled ROC-AUC",
+      "parent": "metrics",
+      "sublabel": "about 0.55, every model"
+    },
+    {
+      "id": "e-brhr",
+      "label": "BRHR",
+      "parent": "metrics",
+      "sublabel": "top 25% residue overlap",
+      "collapsed": true
+    },
+    {
+      "id": "e-brhr-d1",
+      "label": "Binding residue hit rate",
+      "parent": "e-brhr",
+      "sublabel": "true contacts in the top 25%"
+    },
+    {
+      "id": "e-brhr-d2",
+      "label": "Needs known contacts",
+      "parent": "e-brhr",
+      "sublabel": "measured on solved complexes"
+    },
+    {
+      "id": "e-prf",
+      "label": "Precision, recall, F1",
+      "parent": "metrics",
+      "sublabel": "at threshold 0.5"
+    },
+    {
+      "id": "protocol",
+      "label": "Evaluation protocol",
+      "parent": "evaluation",
+      "collapsed": true
+    },
+    {
+      "id": "ep-sets",
+      "label": "Four evaluation sets",
+      "parent": "protocol",
+      "sublabel": "own test, 2 external, TCR-XAI"
+    },
+    {
+      "id": "ep-inf",
+      "label": "One forward pass",
+      "parent": "protocol",
+      "sublabel": "no sampling or decoding"
+    },
+    {
+      "id": "ep-sel",
+      "label": "Tuning",
+      "parent": "protocol",
+      "sublabel": "swept on the reported metric"
+    },
+    {
+      "id": "baselines",
+      "label": "Baselines",
+      "parent": "evaluation",
+      "collapsed": true
+    },
+    {
+      "id": "b-seq",
+      "label": "MixTCRpred, TULIP, EGM",
+      "parent": "baselines",
+      "sublabel": "need a separate attribution step"
+    },
+    {
+      "id": "b-plm",
+      "label": "PLM plus MLP",
+      "parent": "baselines",
+      "sublabel": "same encoders, two layers"
+    },
+    {
+      "id": "b-other",
+      "label": "PISTE, vibtcr, ERGOII",
+      "parent": "baselines",
+      "sublabel": "PISTE needs HLA typing"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Reading the map",
+      "items": [
+        "A badge on a card means it opens further; Expand all opens everything, and arrow keys walk the tree",
+        "A node reading not specified is a fact the paper never gives, not an omission here"
+      ]
+    }
+  ],
+  "layout": {
+    "direction": "right"
+  }
+}
