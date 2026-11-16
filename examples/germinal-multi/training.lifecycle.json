@@ -1,0 +1,91 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Germinal Multi: the optimization loop",
+    "subtitle": "No weights are updated; the candidate sequence is what changes",
+    "output": "train.html",
+    "quality_profile": "showcase"
+  },
+  "mainPath": [
+    "seed",
+    "fold",
+    "grad",
+    "judge"
+  ],
+  "states": [
+    {
+      "id": "seed",
+      "type": "start",
+      "label": "Seed the CDR logits",
+      "sublabel": "the parent, or random",
+      "tag": "starts from the parent"
+    },
+    {
+      "id": "fold",
+      "type": "active",
+      "label": "Fold against targets",
+      "sublabel": "AF2-Multimer per target",
+      "tag": "per-target template"
+    },
+    {
+      "id": "grad",
+      "type": "active",
+      "label": "Move the sequence",
+      "sublabel": "gradient, then AbMPNN",
+      "tag": "summed, or PCGrad"
+    },
+    {
+      "id": "judge",
+      "type": "decision",
+      "label": "Worst target improved?",
+      "sublabel": "minimum ipSAE of all",
+      "tag": "the floor only rises"
+    },
+    {
+      "id": "accept",
+      "type": "success",
+      "label": "Candidate accepted",
+      "sublabel": "ranked for the lab",
+      "tag": "60, 57 and 60 ordered"
+    },
+    {
+      "id": "revert",
+      "type": "failure",
+      "label": "Revert the cycle",
+      "sublabel": "previous sequence stands",
+      "tag": "one gains, one loses"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "seed",
+      "to": "fold"
+    },
+    {
+      "from": "fold",
+      "to": "grad"
+    },
+    {
+      "from": "grad",
+      "to": "judge"
+    },
+    {
+      "from": "judge",
+      "to": "accept",
+      "label": "yes",
+      "variant": "emphasis"
+    },
+    {
+      "from": "judge",
+      "to": "revert",
+      "label": "no"
+    },
+    {
+      "from": "revert",
+      "to": "fold",
+      "label": "next cycle",
+      "note": "the loop runs until a cycle stops improving"
+    }
+  ]
+}

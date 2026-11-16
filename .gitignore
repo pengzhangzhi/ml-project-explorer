@@ -1,2 +1,6 @@
-*.html
 .DS_Store
+
+# Delivered pages are build output; the specs that produce them are tracked.
+/*.delivery.json
+/*.finalize*.json
+examples/**/*.html

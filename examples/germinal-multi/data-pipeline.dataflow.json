@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Germinal Multi Target Pipeline",
+    "subtitle": "Structures, escape measurements and sequence counts, to the antigens each campaign designs against",
+    "output": "data-pipeline.html",
+    "viewBox": [
+      820,
+      520
+    ],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "Evidence"
+    },
+    {
+      "label": "Shortlist"
+    },
+    {
+      "label": "Design targets"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "struct",
+      "type": "database",
+      "label": "Solved complexes",
+      "sublabel": "antibody-antigen PDBs",
+      "stage": 0,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "escapeev",
+      "type": "database",
+      "label": "Escape evidence",
+      "sublabel": "Dadonaite 2025, J Virol",
+      "stage": 0,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "seqs",
+      "type": "database",
+      "label": "Public sequences",
+      "sublabel": "via outbreak.info API",
+      "stage": 0,
+      "row": 2,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "sites",
+      "type": "backend",
+      "label": "Candidate sites",
+      "sublabel": "interface and escape",
+      "stage": 1,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "pfm",
+      "type": "backend",
+      "label": "PFM forecast",
+      "sublabel": "top 50 substitutions",
+      "stage": 1,
+      "row": 2,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "parental",
+      "type": "database",
+      "label": "Parental antigens",
+      "sublabel": "EGFR, BA.2, XFG",
+      "stage": 2,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "challenge",
+      "type": "database",
+      "label": "Challenge antigens",
+      "sublabel": "XFG-Next, composite",
+      "stage": 2,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    }
+  ],
+  "flows": [
+    {
+      "id": "f-struct",
+      "from": "struct",
+      "to": "parental",
+      "label": "structures",
+      "classification": "templates",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-escape",
+      "from": "escapeev",
+      "to": "sites",
+      "label": "escape sites",
+      "classification": "six in the RBD",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-seqs",
+      "from": "seqs",
+      "to": "pfm",
+      "label": "counts",
+      "classification": "per site",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-sites",
+      "from": "sites",
+      "to": "challenge",
+      "label": "sites",
+      "classification": "filtered",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-pfm",
+      "from": "pfm",
+      "to": "challenge",
+      "label": "forecast",
+      "classification": "top 50"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "How a target gets chosen",
+      "items": [
+        "Each campaign designs against exactly two antigens: the parental one, and a challenge antigen that defeats the existing antibody",
+        "For EGFR the challenge is artificial \u2014 one composite antigen carrying all six resistance substitutions, which keeps the optimization at two targets instead of seven",
+        "For XFG the challenge is XFG-Next, built from the three substitutions where the evolutionary forecast and the published escape map agree",
+        "The escape evidence is one outside dataset: a pseudovirus deep mutational scan of BD55-1205 escape and ACE2 binding, measured in a KP.3.1.1 spike background (Dadonaite et al. 2025, Journal of Virology 99(11)). The six EGFR substitutions come from reported clinical resistance instead; no escape screen was run in this paper"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "What the targets do not settle",
+      "items": [
+        "Three variants were withheld from design entirely (BA.2.86, JN.1 and PG.3.1) and only tested afterwards; the composite antigen was also split back into single substitutions and tested one at a time",
+        "The escape map was measured in a KP.3.1.1 background, not XFG, and one forecast substitution behaved differently when moved across backgrounds",
+        "Breadth beyond the two design targets is measured, not designed: withheld variants were only ever tested afterwards",
+        "Designing against both targets did not guarantee activity against each substitution on its own"
+      ]
+    }
+  ]
+}

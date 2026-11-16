@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Germinal Multi: how a design is judged",
+    "subtitle": "Two assay tracks, and what each one can and cannot prove",
+    "output": "eval-pipeline.html",
+    "viewBox": [
+      820,
+      460
+    ],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "What was made"
+    },
+    {
+      "label": "Assay"
+    },
+    {
+      "label": "Number"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "designs",
+      "type": "database",
+      "label": "Designs on target",
+      "sublabel": "60, 57 and 60 ordered",
+      "stage": 0,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "withheld",
+      "type": "database",
+      "label": "Withheld variants",
+      "sublabel": "never designed on",
+      "stage": 0,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "bli",
+      "type": "backend",
+      "label": "BLI binding",
+      "sublabel": "0.5 nm counts as a hit",
+      "stage": 1,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "pseudo",
+      "type": "backend",
+      "label": "Pseudovirus assay",
+      "sublabel": "blocks entry, not binding",
+      "stage": 1,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "kd",
+      "type": "backend",
+      "label": "Apparent K_D",
+      "sublabel": "R50: 60 nM, then 20 nM",
+      "stage": 2,
+      "row": 0,
+      "width": 140,
+      "height": 58
+    },
+    {
+      "id": "ic50",
+      "type": "backend",
+      "label": "Neutralization IC50",
+      "sublabel": "X51: 2.1 and 6.3 ng/mL",
+      "stage": 2,
+      "row": 1,
+      "width": 140,
+      "height": 58
+    }
+  ],
+  "flows": [
+    {
+      "id": "f-d-bli",
+      "from": "designs",
+      "to": "bli",
+      "label": "every design",
+      "classification": "at 1,000 nM",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-bli-kd",
+      "from": "bli",
+      "to": "kd",
+      "label": "binders only",
+      "classification": "fitted",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-w-ps",
+      "from": "withheld",
+      "to": "pseudo",
+      "label": "breadth check",
+      "classification": "after the fact",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -34
+    },
+    {
+      "id": "f-ps-ic",
+      "from": "pseudo",
+      "to": "ic50",
+      "label": "titration",
+      "classification": "two runs",
+      "route": "straight",
+      "labelDy": -34
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "What each number means",
+      "items": [
+        "BLI response is biolayer interferometry: a 0.5 nm shift at 1,000 nM counts as binding. It proves contact, nothing more",
+        "Apparent K_D is fitted from the association and dissociation curves, so it is a ranking tool here rather than a thermodynamic constant",
+        "IC50 is the concentration that blocks half of pseudovirus entry, reported as the geometric mean of two runs in duplicate"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "What the assays cannot settle",
+      "items": [
+        "Binding does not imply neutralization: X58 bound both XFG receptor-binding domains and blocked only one",
+        "Breadth beyond the two design targets was measured afterwards, never optimized for - R50 happened to bind all four withheld variants",
+        "One off-target check only (PD-L1, no binding seen), so broad specificity is untested"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "What it was compared against",
+      "items": [
+        "The parent antibodies the designs were meant to beat: cetuximab for EGFR, AZD3152 for the KP.3 campaign, BD55-1205 for XFG",
+        "Design baselines that score substitutions without an antigen model: ESM-IF1 and FAMPNN inverse folding, and raw AbYsis position frequencies",
+        "The best single mutant of AZD3152 bound KP.3 but neutralized neither variant, which is the comparison the multi-target designs are meant to win"
+      ]
+    }
+  ]
+}

@@ -1,27 +1,31 @@
 ---
 name: ml-project-explorer
-description: Turn an ML paper, repository or project specification into one Archify artifact with exactly three views: a drill-down map of Task, Data, Modeling and Evaluation, the data pipeline, and the model pipeline. Use when asked to explain, map, summarize or visualize an ML paper, project or codebase, or when given an arXiv link and asked what the project does.
+description: Turn an ML paper, repository or project specification into one interactive Archify artifact with exactly four panels — the data pipeline, the training pipeline, the inference pipeline and the evaluation pipeline — that a reader can ask questions of and annotate. Use when asked to explain, map, summarize or visualize an ML paper, project or codebase, or when given an arXiv or bioRxiv link and asked what the project does.
 license: MIT
 ---
 
 # ML Project Explorer
 
-One Archify explainer page, three panels, nothing else. Depth lives inside the diagrams, not in extra panels.
+One Archify explainer page, four panels, nothing else. Every panel is a **pipeline**: something enters, something happens to it, something comes out. Together they answer the only four questions a reader has about an ML project — where the data came from, how the thing was fitted, what it computes at inference, and how anyone knows it works.
 
 Read `~/.claude/skills/archify/SKILL.md` and `~/.claude/skills/archify/references/explainer-authoring.md` first. Archify does the rendering; never hand-write HTML or a second viewer.
 
-The page is user-facing, so every word on it — the conclusion, the reasons, the panel titles, node labels and sublabels, the cards — is written for a reader, not for a log. If a `writing` skill is installed, read it before drafting and follow it. Either way: the conclusion's first sentence must stand alone, a term the reader may not use gets its meaning alongside it, every number keeps its unit and what it was measured on, and a fact stated in one place is not rephrased in another.
+The page is user-facing, so every word on it — the conclusion, the reasons, the panel titles, node labels, sublabels, tags and cards — is written for a reader, not for a log. If a `writing` skill is installed, read it before drafting and follow it. Either way: the conclusion's first sentence must stand alone, a term the reader may not use gets its meaning alongside it, every number keeps its unit and what it was measured on, and a fact stated in one place is not rephrased in another.
 
 ## What you deliver
 
-A single `.html` page with:
+A single published artifact with:
 
 - the one-paragraph conclusion, up to four reasons, `@answer scope=...`, and `@source` lines (this is the document header, not a panel);
-- **panel 1 — the four components**, a `tree` diagram whose branches expand on click;
-- **panel 2 — data pipeline**, a `dataflow` diagram;
-- **panel 3 — model pipeline**, an `architecture` diagram.
+- **panel 1 — data pipeline**, a `dataflow`: where the data came from and how it was split;
+- **panel 2 — training pipeline**, a `lifecycle`: the loop that fitted the model;
+- **panel 3 — inference pipeline**, an `architecture`: what one forward pass computes;
+- **panel 4 — evaluation pipeline**, a `dataflow`: held-out data to numbers to baselines;
+- an **ask-and-annotate layer**, so the reader can question any node and mark up the page.
 
-No results panel, no ablation tables, no caveat panels, no checklist. Facts that would fill those panels belong in a node `sublabel`, a diagram `card`, or the `scope` line. If a fact fits nowhere, it is not important enough for the page.
+No components tree, no results panel, no ablation tables, no caveat panels, no checklist. The task and problem definition live in the conclusion and the reasons, which is where a reader looks for them anyway. Every other fact belongs in a node `sublabel` or `tag`, a diagram `card`, or the `scope` line. If a fact fits nowhere, it is not important enough for the page.
+
+**Always four panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs at inference, and says plainly that no weights are updated. A project with no held-out evaluation still gets panel 4, showing what was measured instead. Deleting a panel hides the most interesting thing about such a project; naming the absence is the whole point. Never pad a panel with `not specified` nodes to fill the slot.
 
 ## Investigate the source first
 
@@ -29,43 +33,59 @@ For a paper, read the method, datasets, experiments and the appendix. For a repo
 
 Preserve exact names, counts, tensor shapes and terminology. Mark an absent fact `not specified` and never guess one. Distinguish what a paper reports, what you inferred from code, and what is only proposed.
 
-## Panel 1: the four components
+## Panel 1: data pipeline
 
-Use this hierarchy exactly, as a native `tree` spec file (not compact `@tree` rows, which cannot set `collapsed`):
+A `dataflow`: raw sources → filtering and labeling → train / validation / test. Put real counts and splits in sublabels. Give an absent fact a node of its own (`"Validation split"`, sublabel `"not specified"`) only when the omission changes how a reader reads the results; otherwise say it in a card.
 
-```
-ML Project
-├── Task          → Problem Definition
-├── Data          → Dataset · Data Preparation
-├── Modeling      → Model · Training
-└── Evaluation    → Metrics · Evaluation Protocol · Baselines
-```
+Stop at the splits. Losses and metrics belong to panels 2 and 4.
 
-- Level 3 holds the technical facts, one fact per node: short `label`, detail in `sublabel`.
-- Set `collapsed: true` on every level-2 node. The page then opens at root plus four components plus eight subcategories, and the reader clicks down to the facts. The Viewer draws a stacked card with the hidden count, has Expand all, and takes Enter, Space and arrow keys.
-- Give a **level 4** to every leaf whose term a non-specialist would want explained — a metric, a loss, a split rule, an encoder. Two children each: what it actually measures or does, and the one caveat or number that changes how it reads. Set `collapsed: true` on that leaf too. This is the only way to put teaching detail behind a click, because the Viewer reads just one authored detail field per node (`sublabel`), so hover and the Semantic Passport can only repeat the card's own text.
-- Set `layout.direction: "right"` once the tree has four levels. Downward layout grows the canvas sideways with every leaf and blows the legibility floor (a 70-node tree measured 7137px wide and failed at 2.1px text); rightward layout grows it with depth instead and passes.
-- Attach `sources` to a node whose claim a reader would want to check. `sources` are repository file paths verified against `ARCHIFY_REPO_ROOT`, not URLs, so a paper with no checked-out code gets none.
+## Panel 2: training pipeline
 
-## Panel 2: data pipeline
+A `lifecycle` spec file. This is the loop: initialize → one step over a batch → the update → the condition that ends it. `lifecycle` is the only diagram type whose back edges are first-class — its own schema says *"transitions back to an earlier main-path state are drawn as loops above"* — so a training loop finally draws as a loop instead of a straight chain with a sentence apologizing for it.
 
-A `dataflow` spec: raw sources → filtering and labeling → train / validation / test. Put real counts and splits in sublabels. Give absent facts a node of their own (`"Validation split"`, sublabel `"not specified"`) only when the omission changes how a reader reads the results; otherwise say it in a card.
+- `schema_version` is **3**, not 1. Every other type uses 1; this one will fail validation with `schema/const` if you copy a header.
+- `mainPath` is required and holds **at most 4 states**. Five measured 1489px against a 1395px desktop cap. Put the outcomes (`success`, `failure`) on branches off the decision rather than extending the main path; they are drawn below it and cost no width.
+- State `type` is one of `start`, `active`, `waiting`, `decision`, `success`, `failure`, `neutral`, `external`. The loop condition is a `decision`; the branch that goes around again is a `failure` or `active` state with a transition back to an earlier main-path state.
+- **Leave main-path transitions unlabelled.** A label widens the gap between the states it joins, and four labelled gaps alone pushed a passing diagram 355px over the cap. Label the branches off the decision (`"yes"`, `"no"`, `"next cycle"`) — those carry the real information — and put anything longer in a transition `note`.
+- A state takes **three** authored lines: `label`, `sublabel` and `tag`. `tag` is *visible*, not hover-only, and is capped near 212px — about **48 characters**. Longer fails with `lifecycle/state-text-too-long` naming the exact shortfall.
+- Use `tag` for the teaching line: what this step actually does to the data, or the one number that changes how it reads. This is the panel where a non-specialist learns the most, because `lifecycle` is the only type that renders a third line and the only pipeline type that feeds hover (below).
 
-Stop at the splits. Downstream losses and metrics belong to panel 3 or to a card — a fifth stage pushes text below the legibility floor.
+For a project that fits no weights, the states are the inference-time optimization loop, and the `start` state says so in its sublabel.
 
-A `dataflow` node cannot drill down, so a stage whose meaning needs a sentence gets that sentence in a card, named so the reader can tie the two together.
+## Panel 3: inference pipeline
 
-## Panel 3: model pipeline
+Compact `@architecture` rows: input representations → encoders, blocks, branches → output. Show the major operations, and tensor shapes where the source gives them. Auto-placement follows the edges; do not plan coordinates.
 
-Compact `@architecture` rows: input representations → encoders, blocks, branches → output. Show the major operations, and tensor shapes where the source gives them. Mark train-only paths with the `security` variant so inference-time flow stays readable. Auto-placement follows the edges; do not plan coordinates.
+- **No back edges.** Every one routes outside the auto-sized canvas, and compact `@architecture` rows cannot carry a `viewBox` to enlarge it. Three attempts at a loop-back arrow failed in a row. A cycle belongs in panel 2, which is why panel 2 exists; if the inference path itself recycles, say so in a node label (`"Accept, revert, repeat"`) and one line of prose above the diagram.
+- **Keep the longest path to four nodes.** A ten-node chain measured 2174px and failed the static floor at 5.0px; a six-node chain cleared that and still failed the browser floor at 7.8px. Four passes. A diamond branch is cheaper than a long chain: it spends height instead of width.
+- Mark train-only paths with the `security` variant so the inference-time flow stays readable.
+
+## Panel 4: evaluation pipeline
+
+A `dataflow`: held-out data → what the model produced → the metrics computed on it → the baselines it is compared against. This is where the numbers live, and where the baselines live now that there is no components tree.
+
+Name each metric as a node and define it in the node's `sublabel` — a reader who does not know Uno's C-index or ipSAE needs its meaning here, not in a glossary. Put the thresholds and the caveats that change how a number reads into cards.
+
+Stop at the comparison. A conclusion drawn from the numbers belongs in the page's conclusion paragraph.
+
+## Which panels the reader can hover and focus
+
+Not every diagram type exposes its nodes. `render-tree`, `render-architecture` and `render-lifecycle` call `focusNodeAttrs`; `render-dataflow` and `render-workflow` do not.
+
+- **Panels 2 and 3** emit focusable nodes with `data-node-label`, `data-node-sublabel`, `data-node-tag` and an SVG `<title>`, so hovering a node shows `label · sublabel · context · tag` and the Semantic Passport opens on click. Panel 2 is the richest surface on the page.
+- **Panels 1 and 4** emit `data-node-label=""` — the attribute is present but empty. Their nodes can be annotated but carry no hover detail, so a `dataflow` stage whose meaning needs a sentence gets that sentence in a `card`, named so the reader can tie the two together.
+
+Never plan teaching detail into a `dataflow` node expecting it to be reachable on hover. It is not.
 
 ## Archify constraints that cause most failures
 
 Learned from real finalize runs. Respect them in the first draft and you will usually pass on the first try.
 
-**Legibility sets the canvas size.** Sublabel text renders at a fixed size and shrinks with the page scale, so a wide diagram fails the 6px floor no matter how short the text. Keep a `dataflow` at **four stages or fewer** and `meta.viewBox` width near **1000**. Shortening a sublabel does not rescue an over-wide canvas; narrowing the canvas does.
+**There are two legibility floors, and the browser one is stricter.** `finalize` without `--browser-check` enforces a static **6px** minimum. `--browser-check` renders the page in Chrome and enforces **10px**, measured at the width the panel actually gets inside the explainer — which is narrower than the same diagram standalone. A panel can pass every static gate and still fail in the browser: the lifecycle probe that passed standalone rendered at 8.7px once it was one panel of four. Always run `--browser-check`, and never report a page as checked without it.
 
-**Node text budget.** At `width: 140` keep sublabels to about **23 characters** and labels to about 19. A sublabel needing more pixels than the node provides is a hard error that names the exact shortfall.
+**Legibility sets the canvas size.** Sublabel text renders at a fixed size and shrinks with the page scale, so a wide diagram fails no matter how short the text. Inside a four-panel explainer, keep a `dataflow` at **three stages** with `meta.viewBox` width near **820**. Four stages at 1000 passes the static gate and fails the browser gate — that cost three repair rounds in a row, once per dataflow panel. Shortening a sublabel does not rescue an over-wide canvas; dropping a stage does. A stage you drop becomes a `card`, which loses nothing: a card holds more words than four nodes ever could.
+
+**Node text budget.** At `width: 140` keep `dataflow` sublabels to about **23 characters** and labels to about 19. A `lifecycle` tag gets about 48. Either overflow is a hard error naming the exact shortfall.
 
 **Same-row flows need `route: "straight"`.** When two nodes share a row across adjacent stages, port fan-out introduces a 9px jog that fails the 16px interior-segment floor. A straight route removes it.
 
@@ -77,26 +97,70 @@ Learned from real finalize runs. Respect them in the first draft and you will us
 
 **A fan-in crowds labels, not lines.** Two or three flows converging on one node put their labels in the same corridor, and no `labelDy` clears it — every offset collides with either the other label, the vertical segment, or a node. Merge the sources into one node where they mean the same thing, and otherwise take the exact `labelAt` the diagnostic suggests: it computes a free position, so it lands first time where guessing does not.
 
+**`sources` are repository file paths**, verified against `ARCHIFY_REPO_ROOT` — not URLs. A paper with no checked-out code gets none, and a cited work cannot become a clickable pin. Put the citation in a `sublabel` or a card as plain text instead.
+
 ## Delivery
 
 Give each run its own folder, then:
 
 ```sh
-node ~/.claude/skills/archify/bin/archify.mjs finalize explainer candidate.archify.md <slug>.html --json
+mkdir -p bc-out
+node ~/.claude/skills/archify/bin/archify.mjs finalize explainer candidate.archify.md <slug>.html \
+  --json --browser-check --out-dir bc-out
 ```
 
-A non-zero exit is never success. Diagnostics name the line, the node and a repair; fix the draft and rerun the same command. Do not edit the delivered HTML.
+A non-zero exit is never success. Diagnostics name the line, the component and a repair; fix the draft and rerun the same command. Do not edit the delivered HTML.
 
-To publish the page as a shareable artifact, prepend one line, because the artifact wrapper strips the root attributes that the page's own CSS keys off:
+Two things that waste a round each: a `card` `dot` must be one of `cyan`, `emerald`, `violet`, `amber`, `rose`, `orange`, `slate` — no other colour name validates. And `--out-dir` must be a directory nothing has written to, or the run fails `viewer/evidence-path-conflict` on a previous run's evidence rather than on anything in the draft; `rm -rf` it between runs.
+
+While drafting a single panel, validate it alone — it is far cheaper than a whole-page finalize:
 
 ```sh
-{ printf '<script>document.documentElement.setAttribute("data-style","swiss")</script>\n'; cat <slug>.html; } > publish.html
+node ~/.claude/skills/archify/bin/archify.mjs finalize lifecycle train.lifecycle.json train.html --json
 ```
 
-Publish `publish.html`. Archify's PNG, SVG and WebM export buttons work in the local file only; the artifact viewer blocks downloads.
+## The ask-and-annotate layer
+
+A finished page is a draft, not a result. Ship it so the reader can interrogate it and the author can mark it up, then revise from what they say.
+
+Build the publish file by injecting `ask-overlay.html` before the delivered page's last `</body></html>`, and prepend the style line, because the artifact wrapper strips the root attributes the page's CSS keys off:
+
+```sh
+python3 -I - <<'EOF'
+src = open("<slug>.html", encoding="utf-8").read()
+overlay = open("ask-overlay.html", encoding="utf-8").read()
+m = "</body></html>"; i = src.rindex(m)
+open("publish.html", "w", encoding="utf-8").write(
+    '<script>document.documentElement.setAttribute("data-style","swiss")</script>\n'
+    + src[:i] + "\n" + overlay + "\n" + src[i:])
+EOF
+```
+
+The overlay lives beside this file. Never edit the delivered HTML to add it. Publish `publish.html` with:
+
+```
+capabilities: {
+  "sample": {},
+  "comments": {"composer_only": true},
+  "user": {},
+  "db": {"rules": [{"path": "questions", "read": "admin", "write": "self"},
+                   {"path": "questions/{self}", "read": "interact", "write": "interact"}]}
+}
+```
+
+What each one buys, and the rules that bite:
+
+- `sample` lets the page answer questions about itself. The overlay builds its grounding text from the page's own DOM at load — conclusion, reasons, and every node with its sublabel and ancestors — and instructs that every number must appear on the page and that `not specified` means the source is silent. Calls spend the **viewer's** Claude usage and the first one asks their permission.
+- `comments: {composer_only: true}` is the annotate loop. The page takes over a node click and opens claude.ai's own comment composer anchored to that node; the shell does all the writing, so no consent is asked and the page never holds a credential. **Send to Claude** on the thread reaches the session that built the page — read it with `ArtifactComments`, change the spec files, rerun `finalize`, republish, reply saying what changed, then resolve the thread.
+- `db` logs each viewer's questions to a document only the page's editors can read, so one reader never sees what another did not understand. Read it back with `ArtifactData` and rewrite the sublabels that keep generating questions. **A db rule's `read` may not outrank its `write`**, or the publish is refused 422.
+- Archify's PNG, SVG and WebM export buttons work in the local file only; the artifact viewer blocks downloads and warns about it on every publish. Ignore that warning — it is Archify's buttons, not the overlay.
+
+Then annotate the page yourself before handing over the link. It is the cheapest review there is: one note on a node whose provenance looked thin found a real defect on the first try — a node that had silently merged two different data sources into one label.
 
 ## Reporting
 
 Two or three lines: the conclusion, then the link. State the abstraction level, anything deliberately omitted, and any requested content dropped during layout repair.
 
-Say "automated checks passed" and not "visually reviewed" unless you actually looked at the rendered page. For a proposal, keep confirmed decisions and open questions apart, and never present a plan as a result.
+Say "automated checks passed" and not "visually reviewed" unless you actually looked at the rendered page. Name any panel whose stage the source does not really have, and say what you put there instead. For a proposal, keep confirmed decisions and open questions apart, and never present a plan as a result.
+
+If the artifact is private, say so — the reader cannot open the link until it is shared.
