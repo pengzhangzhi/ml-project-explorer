@@ -1,21 +1,24 @@
 # ml-project-explorer
 
-A Claude Code skill that turns an ML paper, repository or technical report into one interactive page with exactly four panels — the **data pipeline**, the **training pipeline**, the **inference pipeline** and the **evaluation pipeline** — that a reader can ask questions of and mark up.
+A Claude Code skill that turns an ML paper, repository or technical report into one interactive page with exactly five panels — the **data pipeline**, the **model architecture**, the **training pipeline**, the **inference pipeline** and the **evaluation pipeline** — that a reader can ask questions of and mark up.
 
-## Why four pipelines
+## Why these five
 
-Every panel is a pipeline: something enters, something happens to it, something comes out. Together they answer the only four questions a reader has about an ML project — where the data came from, how the thing was fitted, what it computes at inference, and how anyone knows it works.
+Four are pipelines: something enters, something happens to it, something comes out. One is the architecture, the only static panel, because what a network is made of is not a process. Together they answer the five questions a reader actually has — where the data came from, what the model is, how it was fitted, what happens when you run it, and how anyone knows it works.
 
 | Panel | Diagram | Holds |
 |---|---|---|
 | Data pipeline | `dataflow` | sources, filtering, the splits and their real counts |
-| Training pipeline | `lifecycle` | the loop that fitted the model, drawn as a loop |
-| Inference pipeline | `architecture` | what one forward pass computes |
-| Evaluation pipeline | `dataflow` | held-out data, the metrics defined, the baselines |
+| Model architecture | `architecture` | blocks, layer counts, widths, heads, whose weights |
+| Training pipeline | `lifecycle` | the loop that fitted it, the hyperparameters, the hardware |
+| Inference pipeline | `lifecycle` | what a user's request passes through, and the step count |
+| Evaluation pipeline | `dataflow` | the oracle, the thresholds, the baselines |
+
+**Architecture and inference are kept apart on purpose.** They are the pair most often conflated. A layer count belongs in the architecture panel; a step count belongs in the inference panel. The first says what the network *is*, the second what *happens* when someone asks it for an output — and a model with 14 denoiser layers that runs 400 solver steps is badly described by either number alone.
 
 The task and problem definition live in the conclusion paragraph, where a reader looks for them anyway. Everything else goes in a node's detail lines or a card. There is no results panel, no ablation table and no caveat section: if a fact fits nowhere, it is not important enough for the page.
 
-**Always four panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs at inference and says plainly that no weights are updated. Deleting the panel would hide the most interesting thing about such a project.
+**Always five panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs instead and says plainly that no weights are updated. A project that releases no new network still gets an architecture panel, naming the frozen components it composes and whose weights they are. Deleting the panel would hide the most interesting thing about such a project.
 
 ## The interactive layer
 
@@ -52,13 +55,13 @@ Every number in it was measured by a failing run, not guessed.
 
 ## Examples
 
-`examples/partidesign` is the reference for a project that trains: a unified biomolecular co-design model whose training panel is two networks in sequence, the first frozen before the second starts, with a third trained separately. Two repair rounds, both legibility.
+`examples/partidesign` is the five-panel reference, and the reference for a project that trains: a unified biomolecular co-design model whose training panel is two networks in sequence, the first frozen before the second starts, with a third trained separately. It passes all four gates, browser-check included.
 
-`examples/germinal-multi` is the reference for a project that trains **nothing** — an antibody design paper whose training panel is an inference-time optimization loop. It is the case the four-panel structure has to bend to honestly, and the reason the contract says to keep all four panels rather than drop the empty one.
+`examples/germinal-multi` is the reference for a project that trains **nothing** — an antibody design paper whose training panel is an inference-time optimization loop. It is the case the structure has to bend to honestly, and the reason the contract says to keep every panel rather than drop the empty one.
 
-Both pass all four gates, browser-check included.
+It is also **one panel behind**: it was built under the four-panel contract, before the architecture and inference panels were separated, so its single model panel mixes layer counts with runtime steps. The specs are still valid Archify and still pass their gates; the panel split is what is missing.
 
-`examples/legacy-three-panel` holds two pages built under the earlier contract, kept as `dataflow` layout references. Their structure is superseded; see the note in that folder.
+`examples/legacy-three-panel` holds two pages built under the original contract, kept as `dataflow` layout references. Their structure is superseded; see the note in that folder.
 
 ## License
 

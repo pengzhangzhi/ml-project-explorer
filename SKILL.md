@@ -1,12 +1,16 @@
 ---
 name: ml-project-explorer
-description: Turn an ML paper, repository or project specification into one interactive Archify artifact with exactly four panels — the data pipeline, the training pipeline, the inference pipeline and the evaluation pipeline — that a reader can ask questions of and annotate. Use when asked to explain, map, summarize or visualize an ML paper, project or codebase, or when given an arXiv or bioRxiv link and asked what the project does.
+description: Turn an ML paper, repository or project specification into one interactive Archify artifact with exactly five panels — the data pipeline, the model architecture, the training pipeline, the inference pipeline and the evaluation pipeline — that a reader can ask questions of and annotate. Use when asked to explain, map, summarize or visualize an ML paper, project or codebase, or when given an arXiv or bioRxiv link and asked what the project does.
 license: MIT
 ---
 
 # ML Project Explorer
 
-One Archify explainer page, four panels, nothing else. Every panel is a **pipeline**: something enters, something happens to it, something comes out. Together they answer the only four questions a reader has about an ML project — where the data came from, how the thing was fitted, what it computes at inference, and how anyone knows it works.
+One Archify explainer page, five panels, nothing else. Four are **pipelines** — something enters, something happens to it, something comes out — and one is the **architecture**, the only static panel, because what a network is made of is not a process.
+
+Together they answer the five questions a reader has about an ML project: where the data came from, what the model is, how it was fitted, what it does when you run it, and how anyone knows it works.
+
+**Keep the architecture and the inference panels apart.** They are the question most often conflated, and the distinction is the point: the architecture panel is what the network *is* — blocks, layer counts, widths, heads, where the weights live. The inference panel is what *happens* when a user asks for an output — building the input, the encode, the sampling loop or forward pass, decoding, post-processing, ranking. A layer count belongs in the first; a step count belongs in the second.
 
 Read `~/.claude/skills/archify/SKILL.md` and `~/.claude/skills/archify/references/explainer-authoring.md` first. Archify does the rendering; never hand-write HTML or a second viewer.
 
@@ -18,14 +22,15 @@ A single published artifact with:
 
 - the one-paragraph conclusion, up to four reasons, `@answer scope=...`, and `@source` lines (this is the document header, not a panel);
 - **panel 1 — data pipeline**, a `dataflow`: where the data came from and how it was split;
-- **panel 2 — training pipeline**, a `lifecycle`: the loop that fitted the model;
-- **panel 3 — inference pipeline**, an `architecture`: what one forward pass computes;
-- **panel 4 — evaluation pipeline**, a `dataflow`: held-out data to numbers to baselines;
+- **panel 2 — model architecture**, an `architecture`: what the network is made of;
+- **panel 3 — training pipeline**, a `lifecycle`: the loop that fitted it, and on what hardware;
+- **panel 4 — inference pipeline**, a `lifecycle`: what happens when a user asks for an output;
+- **panel 5 — evaluation pipeline**, a `dataflow`: outputs to numbers to baselines;
 - an **ask-and-annotate layer**, so the reader can question any node and mark up the page.
 
 No components tree, no results panel, no ablation tables, no caveat panels, no checklist. The task and problem definition live in the conclusion and the reasons, which is where a reader looks for them anyway. Every other fact belongs in a node `sublabel` or `tag`, a diagram `card`, or the `scope` line. If a fact fits nowhere, it is not important enough for the page.
 
-**Always four panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs at inference, and says plainly that no weights are updated. A project with no held-out evaluation still gets panel 4, showing what was measured instead. Deleting a panel hides the most interesting thing about such a project; naming the absence is the whole point. Never pad a panel with `not specified` nodes to fill the slot.
+**Always five panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs instead, and says plainly that no weights are updated. A project that releases no new network still gets an architecture panel, naming the frozen components it composes and whose weights they are. A project with no held-out evaluation still gets panel 5, showing what was measured instead. Deleting a panel hides the most interesting thing about such a project; naming the absence is the whole point. Never pad a panel with `not specified` nodes to fill the slot.
 
 ## Investigate the source first
 
@@ -37,9 +42,18 @@ Preserve exact names, counts, tensor shapes and terminology. Mark an absent fact
 
 A `dataflow`: raw sources → filtering and labeling → train / validation / test. Put real counts and splits in sublabels. Give an absent fact a node of its own (`"Validation split"`, sublabel `"not specified"`) only when the omission changes how a reader reads the results; otherwise say it in a card.
 
-Stop at the splits. Losses and metrics belong to panels 2 and 4.
+Stop at the splits. Losses belong to panel 3 and metrics to panel 5.
 
-## Panel 2: training pipeline
+## Panel 2: model architecture
+
+Compact `@architecture` rows: input representation → encoders, blocks, branches → output heads. This is the one static panel. Put the layer counts, token and pair widths, head counts and latent dimensions here, in the node labels where they fit and in the prose line above the diagram where they do not.
+
+- **No back edges.** Every one routes outside the auto-sized canvas, and compact `@architecture` rows cannot carry a `viewBox` to enlarge it. Three attempts at a loop-back arrow failed in a row. Recurrence belongs in panel 3 or 4, which is why those panels are `lifecycle`.
+- **Keep the longest path to four nodes** and about 16 characters per label. A ten-node chain measured 2174px and failed the static floor at 5.0px; a six-node chain cleared that and still failed the browser floor at 7.8px. Branch at the output heads rather than extending the chain: a diamond spends height instead of width.
+- Make the input node `external` rather than giving the input its own node — that saves one step of depth, which is a quarter of the budget.
+- Name whose weights these are. A project that trains nothing composes released components, and the panel should say so (`"No new network / all weights are released"`).
+
+## Panel 3: training pipeline
 
 A `lifecycle` spec file. This is the loop: initialize → one step over a batch → the update → the condition that ends it. `lifecycle` is the only diagram type whose back edges are first-class — its own schema says *"transitions back to an earlier main-path state are drawn as loops above"* — so a training loop finally draws as a loop instead of a straight chain with a sentence apologizing for it.
 
@@ -50,19 +64,23 @@ A `lifecycle` spec file. This is the loop: initialize → one step over a batch 
 - A state takes **three** authored lines: `label`, `sublabel` and `tag`. `tag` is *visible*, not hover-only, and is capped near 212px — about **48 characters**. Longer fails with `lifecycle/state-text-too-long` naming the exact shortfall.
 - Use `tag` for the teaching line: what this step actually does to the data, or the one number that changes how it reads. This is the panel where a non-specialist learns the most, because `lifecycle` is the only type that renders a third line and the only pipeline type that feeds hover (below).
 
+This is the panel for the training **hyperparameters and process**: optimizer and learning rate, batch size and how it was reached, the schedule, the hardware and how long it ran, what is frozen and what updates. Put the headline figures in the state lines and the full table in a card — a reader comparing two papers wants the optimizer and the device count, and a reader reproducing one wants the rest.
+
 For a project that fits no weights, the states are the inference-time optimization loop, and the `start` state says so in its sublabel.
 
-## Panel 3: inference pipeline
+## Panel 4: inference pipeline
 
-Compact `@architecture` rows: input representations → encoders, blocks, branches → output. Show the major operations, and tensor shapes where the source gives them. Auto-placement follows the edges; do not plan coordinates.
+Also a `lifecycle`, for the same two reasons: a sampling loop, a diffusion or flow solver, a refinement cycle or an autoregressive decode is a **loop**, and `lifecycle` is the only type that draws one; and it carries hover, which a reader needs most on the panel describing what they would actually run.
 
-- **No back edges.** Every one routes outside the auto-sized canvas, and compact `@architecture` rows cannot carry a `viewBox` to enlarge it. Three attempts at a loop-back arrow failed in a row. A cycle belongs in panel 2, which is why panel 2 exists; if the inference path itself recycles, say so in a node label (`"Accept, revert, repeat"`) and one line of prose above the diagram.
-- **Keep the longest path to four nodes.** A ten-node chain measured 2174px and failed the static floor at 5.0px; a six-node chain cleared that and still failed the browser floor at 7.8px. Four passes. A diamond branch is cheaper than a long chain: it spends height instead of width.
-- Mark train-only paths with the `security` variant so the inference-time flow stays readable.
+This panel answers "what happens when I ask for an output" end to end: building the input, any encode of the context, the loop with its **step count** (not its layer count — that is panel 2), decoding, chemical or structural reconstruction, post-processing, filtering and ranking. Name what falls outside the measured cost, because papers routinely time only the GPU interval.
 
-## Panel 4: evaluation pipeline
+A model whose inference is a single forward pass with no loop still gets this panel: the states are the real stages a user's request passes through, and the absence of a loop is itself worth seeing next to a paper that needs 400 steps.
 
-A `dataflow`: held-out data → what the model produced → the metrics computed on it → the baselines it is compared against. This is where the numbers live, and where the baselines live now that there is no components tree.
+## Panel 5: evaluation pipeline
+
+A `dataflow`: the outputs of panel 4 → the oracle or assay that scores them → the metrics → the baselines they are compared against. This is where the numbers live, and where the baselines live now that there is no components tree.
+
+Evaluation consumes inference, so say what was run to produce the candidates being scored — how many, under what settings, and whether the scoring model is independent of the generating one.
 
 Name each metric as a node and define it in the node's `sublabel` — a reader who does not know Uno's C-index or ipSAE needs its meaning here, not in a glossary. Put the thresholds and the caveats that change how a number reads into cards.
 
@@ -72,8 +90,8 @@ Stop at the comparison. A conclusion drawn from the numbers belongs in the page'
 
 Not every diagram type exposes its nodes. `render-tree`, `render-architecture` and `render-lifecycle` call `focusNodeAttrs`; `render-dataflow` and `render-workflow` do not.
 
-- **Panels 2 and 3** emit focusable nodes with `data-node-label`, `data-node-sublabel`, `data-node-tag` and an SVG `<title>`, so hovering a node shows `label · sublabel · context · tag` and the Semantic Passport opens on click. Panel 2 is the richest surface on the page.
-- **Panels 1 and 4** emit `data-node-label=""` — the attribute is present but empty. Their nodes can be annotated but carry no hover detail, so a `dataflow` stage whose meaning needs a sentence gets that sentence in a `card`, named so the reader can tie the two together.
+- **Panels 2, 3 and 4** emit focusable nodes with `data-node-label`, `data-node-sublabel`, `data-node-tag` and an SVG `<title>`, so hovering a node shows `label · sublabel · context · tag` and the Semantic Passport opens on click. The two `lifecycle` panels are the richest surfaces on the page, because only `lifecycle` renders and exposes a third authored line.
+- **Panels 1 and 5** emit `data-node-label=""` — the attribute is present but empty. Their nodes can be annotated but carry no hover detail, so a `dataflow` stage whose meaning needs a sentence gets that sentence in a `card`, named so the reader can tie the two together.
 
 Never plan teaching detail into a `dataflow` node expecting it to be reachable on hover. It is not.
 
