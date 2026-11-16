@@ -40,9 +40,9 @@ Requires the `archify` skill. Then ask Claude Code to explain a paper, or invoke
 
 The three panels, then a section of layout constraints with real numbers in it: the two legibility floors, three `dataflow` stages at `viewBox` width near 820, four-component chains with labels around 16 characters, `route: "straight"` on same-row flows, `labelDy: -34` for crowded labels, and the card `dot` enum.
 
-It also records one Archify defect worth knowing before you reach for the obvious solution: a **native** `architecture` spec file accepts `sublabel`, `tag` and `meta.viewBox`, passes `finalize architecture` standalone with all four gates, and then **always** fails as an explainer panel at exactly 9.999873991935484px — a nominal 10px losing to a strict `<` comparison, unmoved by viewBox, component count or quality profile. Use compact `@architecture` rows.
+It also records one Archify defect worth knowing before you reach for the obvious solution: a **native** `architecture` spec file accepts `sublabel`, `tag` and `meta.viewBox` and passes `finalize architecture` standalone on all four gates, then always fails as an explainer panel by a rounding margin on the browser text floor that no setting moves. Use compact `@architecture` rows.
 
-Every number in it was measured by a failing run, not guessed.
+The constraints are rules, not a changelog: each one came from a failing run, but the forensics stay out of the prompt.
 
 ## Examples
 
