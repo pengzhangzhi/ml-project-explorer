@@ -23,21 +23,12 @@ If a `writing` skill is installed, read it before drafting.
 - **panel 2 — model pipeline**, compact `@architecture` rows: input → components → output, training and inference on one canvas;
 - **panel 3 — evaluation pipeline**, a `dataflow`: model outputs → scoring → final metrics.
 
-Nothing else. No components tree, no results panel, no ablation tables, no caveat section, no interactive layer. The task and problem definition belong in the conclusion. A fact that fits no node, card or the `scope` line is not important enough for the page.
-
 ## Read the source first
 
-Paper: method, data, experiments, appendix. Repository: README, configs, data loaders, model definitions, training and eval scripts — prefer the implementation over the documentation and note where they disagree. Specification: separate decided from proposed.
-
-Say which claims you took from the source, which you inferred from code, and which are only proposed.
-
+Paper: method, data, experiments, appendix. Repository: README, configs, data loaders, model definitions, training and eval scripts — prefer the implementation over the documentation and note where they disagree. 
 ## Panel 1: data pipeline
 
-Raw sources → cleaning, filtering, labeling, augmentation, tokenizing or cropping → the final splits with their real sizes. Stop at the splits: losses belong to panel 2, metrics to panel 3.
-
-State **how train and test were separated** — at random, by group, by time, by some identity key — and what that leaves shared. A split that controls less than a reader assumes is a fact that belongs beside the results, not in a footnote.
-
-Give an absent fact its own node (`"Validation split"`, sublabel `"Not specified"`) when the omission changes how the results read; otherwise put it in a card.
+Create a visual flowchart showing: Raw data → processing steps → final training/validation/test data. Include actual datasets, filtering, transformations, splits, sample counts, and tensor representations when available.
 
 ## Panel 2: model pipeline
 
