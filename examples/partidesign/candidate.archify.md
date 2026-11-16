@@ -2,48 +2,44 @@
 
 PartiDesign is one generative model that designs a protein, RNA, DNA or small molecule against a target made of any of those same four things. It generates the shape and the identity together — the sequence or chemical formula is not threaded onto a finished backbone afterwards.
 
-- Everything becomes one kind of token. A polymer residue is a token; each ligand heavy atom is a token. Every token carries a 3D center and an eight-dimensional latent, so one model handles all four modalities.
-- The headline claim is throughput, not accuracy: the most successful designs per GPU-day under the paper's own compute budget. The budget rewards a cheap generator as much as an accurate one.
+- Everything becomes one kind of token. A polymer residue is a token; each ligand heavy atom is a token. Each carries a 3D center and an eight-dimensional latent.
+- The headline claim is throughput, not accuracy: the most successful designs per GPU-day. That budget rewards a cheap generator as much as an accurate one.
 - Give PXDesign eight sequence redesigns per backbone and it beats PartiDesign's best setting on successful-backbone rate, reversing the single-draw result.
 - Trained on 128 Huawei Ascend 910B accelerators for about a month. Training excludes validation structures by PDB ID only, with no homology or ligand-scaffold split.
 
-@answer scope="bioRxiv 10.64898/2026.11.03.763860, CC-BY · every number is the paper's · a node reading not specified is a fact the paper never gives"
+@answer scope="bioRxiv 10.64898/2026.11.03.763860, CC-BY · every number is the paper's · a node reading Not specified is a fact the paper never gives"
 @meta locale=en style=swiss quality_profile=showcase
 @source paper title="PartiDesign: A structure-sequence co-design paradigm for practical all-to-all biomolecules design (bioRxiv, 2026)" url=https://doi.org/10.64898/2026.11.03.763860
 @source code title="MegaGatlingPea/PartiDesign-official" url=https://github.com/MegaGatlingPea/PartiDesign-official
 @source server title="PartiDesign web server, Zhejiang University" url=https://cadd.zju.edu.cn/partidesign/
 
-## What was it trained on? {#data}
+## How is the data prepared? {#data}
 
 @diagram dataflow id=data-pipeline source=data-pipeline.dataflow.json title="Eleven sources, reweighted per modality, cropped to 512 tokens"
 
-## What is the model made of? {#architecture}
+## How does the model work? {#model}
 
-Three networks share one token width of 768 and 12 attention heads. The autoencoder is 12 Transformer layers each way, with a pair width of 256. The flow denoiser is 14 layers at those widths, plus a 256-wide condition track. The ligand graph decoder is smaller: three message-passing layers, node width 256 and edge width 128.
+Solid is the inference path; the dimmed rows exist only in training.
 
-Iterative pair updates and triangular multiplication are switched off here. That is where the efficiency over an AlphaFold 3-like stack comes from.
+@architecture id=model-pipeline title="One token type in, structure and sequence out; the training path is dimmed"
+| in | Tokens | external |
+| enc | VAE encoder x12 | backend |
+| den | Flow denoiser x14 | backend |
+| dec | Decoded designs | frontend |
+| gt | Clean endpoint | external |
+| loss | Flow loss | security |
+| in > enc | features | |
+| enc > den | z, 8 dims | emphasis |
+| den > dec | centers + z | emphasis |
+| gt > loss | target | security |
+| den > loss | velocity | security |
 
-@architecture id=model-pipeline title="One token type, one latent, and three networks that share it"
-| enc | Encoder x12 | external |
-| den | Denoiser x14 | backend |
-| dec | Decoder x12 | backend |
-| poly | Polymer atoms | frontend |
-| lig | Ligand graph | frontend |
-| enc > den | latent, 8 dims | emphasis |
-| den > dec | centers, latents | emphasis |
-| dec > poly | 91 atom slots | |
-| dec > lig | bonds, charges | |
+- **Tokens**: one per polymer residue, one per ligand heavy atom, each a 3D center plus an eight-dimensional latent.
+- **VAE encoder**: 12 layers, token width 768, 12 heads, pair width 256. Frozen before flow training starts.
+- **Flow denoiser**: 14 layers at those widths. 400 steps at inference, with separate noise times for centers and latents.
+- **Decoder**: 12 layers writing atoms into 91 canonical slots, plus a 3-layer graph head for ligand bonds and charges.
+- **In training only**: the frozen encoder's posterior sample is the clean endpoint, and the time-weighted loss updates the denoiser alone. The gradient is not drawn: compact architecture rows cannot carry a back edge.
 
-## How was it trained? {#training}
-
-Two networks are trained in sequence, and the first is frozen before the second begins. Hover a state for the detail line.
-
-@diagram lifecycle id=training-loop source=training.lifecycle.json title="The autoencoder learns a local latent; the flow matcher learns to generate it"
-
-## What happens when you ask for a design? {#inference}
-
-@diagram lifecycle id=inference-loop source=inference.lifecycle.json title="400 flow steps, then one decode, then a ranking pass"
-
-## How is a design judged? {#evaluation}
+## How is it evaluated? {#evaluation}
 
 @diagram dataflow id=eval-pipeline source=eval-pipeline.dataflow.json title="Refold the design, apply the benchmark's thresholds, divide into one GPU-day"

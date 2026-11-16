@@ -1,39 +1,28 @@
 # ml-project-explorer
 
-A Claude Code skill that turns an ML paper, repository or technical report into one interactive page with exactly five panels — the **data pipeline**, the **model architecture**, the **training pipeline**, the **inference pipeline** and the **evaluation pipeline** — that a reader can ask questions of and mark up.
+A Claude Code skill that turns an ML paper, repository or technical report into one page with three panels: how the **data** is prepared, how the **model** works, and how it is **evaluated**.
 
-## Why these five
+The page is static HTML. It is for reading.
 
-Four are pipelines: something enters, something happens to it, something comes out. One is the architecture, the only static panel, because what a network is made of is not a process. Together they answer the five questions a reader actually has — where the data came from, what the model is, how it was fitted, what happens when you run it, and how anyone knows it works.
+## The three panels
 
 | Panel | Diagram | Holds |
 |---|---|---|
-| Data pipeline | `dataflow` | sources, filtering, the splits and their real counts |
-| Model architecture | `architecture` | blocks, layer counts, widths, heads, whose weights |
-| Training pipeline | `lifecycle` | the loop that fitted it, the hyperparameters, the hardware |
-| Inference pipeline | `lifecycle` | what a user's request passes through, and the step count |
-| Evaluation pipeline | `dataflow` | the oracle, the thresholds, the baselines |
+| Data pipeline | `dataflow` | raw sources → processing → train / validation / test, with real counts |
+| Model pipeline | `architecture` | input → components → output, with the training path dimmed |
+| Evaluation pipeline | `dataflow` | model outputs → scoring → final metrics and baselines |
 
-**Architecture and inference are kept apart on purpose.** They are the pair most often conflated. A layer count belongs in the architecture panel; a step count belongs in the inference panel. The first says what the network *is*, the second what *happens* when someone asks it for an output — and a model with 14 denoiser layers that runs 400 solver steps is badly described by either number alone.
+**One model panel covers both training and inference.** The inference path is drawn solid; rows that exist only in training — the ground truth, the loss — are marked `security` so they render dimmed. A reader sees the inference path at a glance and the training path when they look for it, on one canvas instead of two.
 
-The task and problem definition live in the conclusion paragraph, where a reader looks for them anyway. Everything else goes in a node's detail lines or a card. There is no results panel, no ablation table and no caveat section: if a fact fits nowhere, it is not important enough for the page.
+**Concise at first glance, technically detailed when expanded.** A node label is three or four words. The layer counts, widths, tensor shapes and step counts go in the detail lines Archify reveals on hover and click, in a short bulleted list under the diagram, and in cards. Unreported facts are marked "Not specified" and never invented.
 
-**Always five panels, even when a stage is missing.** A project that trains nothing still gets a training panel — it shows the optimization loop that runs instead and says plainly that no weights are updated. A project that releases no new network still gets an architecture panel, naming the frozen components it composes and whose weights they are. Deleting the panel would hide the most interesting thing about such a project.
-
-## The interactive layer
-
-A finished page is a draft, not a result. Each page ships with two loops:
-
-- **Ask** — the page answers questions about itself. It builds its grounding text from its own rendered content at load, and is instructed that every number it states must appear on the page, and that a node reading `not specified` means the source is silent rather than something to fill in.
-- **Annotate** — clicking a node opens claude.ai's own comment composer anchored to that node. Send the thread to Claude and the session that built the page reads it, edits the spec files, re-runs the gate and republishes.
-
-The second loop is the one that earns its keep. The first note left on the first page built this way found a real defect: a node whose label had silently merged two different data sources into one phrase.
+The task and problem definition live in the conclusion paragraph. There is no components tree, no results panel, no ablation table, no caveat section and no interactive layer: if a fact fits nowhere, it is not important enough for the page.
 
 ## Why Archify rather than hand-written HTML
 
-Because a diagram that is wrong is worse than no diagram, and only a gate catches it. `finalize` measures what an eyeball approves: it has caught text rendering at 2.1px and 5.0px against a 6px floor, label routes colliding in a corridor, and connections routed outside the canvas — all in drafts that looked fine.
+Because a diagram that is wrong is worse than no diagram, and only a gate catches it. `finalize` measures what an eyeball approves: in this repo's own history it has caught text rendering at 2.1px, 5.0px and 7.8px against the floor, label routes colliding in a corridor, and connections routed outside the canvas — all in drafts that looked fine.
 
-Run it with `--browser-check`. That renders the page in Chrome and raises the floor to 10px, measured at the width each panel actually gets inside the page, which is narrower than the same diagram standalone. A panel can clear every static check and still fail there; one in this repo's own history did.
+Run it with `--browser-check`. That renders the page in Chrome and raises the floor to 10px, measured at the width each panel actually gets inside the page, which is narrower than the same diagram standalone. A panel can clear every static check and still fail there; several in this repo's history did.
 
 ## Install
 
@@ -49,19 +38,17 @@ Requires the `archify` skill. Then ask Claude Code to explain a paper, or invoke
 
 ## What is in SKILL.md
 
-The four panels, then a section of layout constraints with real numbers in it: the two legibility floors, three `dataflow` stages at `viewBox` width near 820, four-node chains in `architecture`, `lifecycle` at `schema_version: 3` with at most four main-path states and a 48-character visible `tag`, and which diagram types expose their nodes to hover at all (`tree`, `architecture` and `lifecycle` do; `dataflow` and `workflow` do not).
+The three panels, then a section of layout constraints with real numbers in it: the two legibility floors, three `dataflow` stages at `viewBox` width near 820, four-component chains with labels around 16 characters, `route: "straight"` on same-row flows, `labelDy: -34` for crowded labels, and the card `dot` enum.
+
+It also records one Archify defect worth knowing before you reach for the obvious solution: a **native** `architecture` spec file accepts `sublabel`, `tag` and `meta.viewBox`, passes `finalize architecture` standalone with all four gates, and then **always** fails as an explainer panel at exactly 9.999873991935484px — a nominal 10px losing to a strict `<` comparison, unmoved by viewBox, component count or quality profile. Use compact `@architecture` rows.
 
 Every number in it was measured by a failing run, not guessed.
 
 ## Examples
 
-`examples/partidesign` is the five-panel reference, and the reference for a project that trains: a unified biomolecular co-design model whose training panel is two networks in sequence, the first frozen before the second starts, with a third trained separately. It passes all four gates, browser-check included.
+`examples/partidesign` is the reference: a unified biomolecular co-design model (bioRxiv 10.64898/2026.11.03.763860). Three panels, all four gates, zero diagnostics.
 
-`examples/germinal-multi` is the reference for a project that trains **nothing** — an antibody design paper whose training panel is an inference-time optimization loop. It is the case the structure has to bend to honestly, and the reason the contract says to keep every panel rather than drop the empty one.
-
-It is also **one panel behind**: it was built under the four-panel contract, before the architecture and inference panels were separated, so its single model panel mixes layer counts with runtime steps. The specs are still valid Archify and still pass their gates; the panel split is what is missing.
-
-`examples/legacy-three-panel` holds two pages built under the original contract, kept as `dataflow` layout references. Their structure is superseded; see the note in that folder.
+`examples/superseded` holds pages built under earlier contracts, kept as layout references. See the note in that folder.
 
 ## License
 
