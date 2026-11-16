@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "PartiDesign: how a design is counted as a success",
+    "subtitle": "Refold the design, apply the benchmark's thresholds, divide into one GPU-day",
+    "output": "eval-pipeline.html",
+    "viewBox": [820, 460],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "Designs" },
+    { "label": "Structure oracle" },
+    { "label": "Verdict" }
+  ],
+  "nodes": [
+    { "id": "pbind", "type": "database", "label": "Protein binders", "sublabel": "ProtDBench, ten targets", "stage": 0, "row": 0, "width": 140, "height": 58 },
+    { "id": "other", "type": "database", "label": "Nucleic and ligand", "sublabel": "aptamers, molecules", "stage": 0, "row": 1, "width": 140, "height": 58 },
+
+    { "id": "af2", "type": "backend", "label": "AF2 initial guess", "sublabel": "complex and alone", "stage": 1, "row": 0, "width": 140, "height": 58 },
+    { "id": "esm", "type": "backend", "label": "ESMFold2 or AF3", "sublabel": "query-only, no MSA", "stage": 1, "row": 1, "width": 140, "height": 58 },
+
+    { "id": "thresh", "type": "cloud", "label": "Four thresholds", "sublabel": "all must pass", "stage": 2, "row": 0, "width": 140, "height": 58 },
+    { "id": "yield", "type": "cloud", "label": "Designs per GPU-day", "sublabel": "86,400 s budget", "stage": 2, "row": 1, "width": 140, "height": 58 }
+  ],
+  "flows": [
+    { "id": "f-a1", "from": "pbind", "to": "af2", "label": "refold", "classification": "two predictions", "route": "straight", "labelDy": -34 },
+    { "id": "f-a2", "from": "af2", "to": "thresh", "label": "confidence", "classification": "and RMSD", "variant": "emphasis", "route": "straight", "labelDy": -34 },
+    { "id": "f-b1", "from": "other", "to": "esm", "label": "refold", "classification": "single sequence", "route": "straight", "labelDy": -34 },
+    { "id": "f-b2", "from": "esm", "to": "yield", "label": "pass rate", "classification": "times budget", "variant": "emphasis", "route": "straight", "labelDy": -34 }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "The four thresholds a protein binder must clear at once",
+      "items": [
+        "Binder pLDDT above 0.8 on a 0-1 scale: the model is confident about the binder's own fold",
+        "Interface pTM above 0.5 and interface predicted aligned error below 10.85 A: it is confident about how binder and target sit together",
+        "Bound-unbound RMSD below 3.5 A: the binder keeps the same shape when the target is taken away",
+        "The same complex-monomer prediction pair must satisfy all four. Protein and peptide designs use AlphaFold2 initial guess; proteins designed against nucleic acids or ligands use ESMFold2-standard; nucleic-acid designs use AlphaFold 3"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "What 'designs per GPU-day' actually measures",
+      "items": [
+        "Every cost was timed on one RTX 4090-48G: generation per candidate (a batch of 16, divided by 16), one MPNN redesign, and a complete refold. Those are combined with the measured pass rate and divided into 86,400 seconds",
+        "So the headline number rewards a cheap generator as much as an accurate one. A second sequence per backbone can raise the chance a backbone succeeds while lowering the daily count, because it costs another full refold",
+        "The timing boundary excludes model loading, compilation, warmup, CPU feature processing, host-device transfer, file I/O and scheduling. PartiDesign was timed at 400 flow steps, RFdiffusion3 at 200 sampler steps, BoltzGen at 500 steps with three recycles and 16 diffusion samples"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Where the advantage does not hold",
+      "items": [
+        "With eight ordinary MPNN draws per backbone, PXDesign has a higher successful-backbone rate than PartiDesign alpha, reversing the single-draw ordering. The win is conditioned on the budget protocol, not independent of it",
+        "Secondary-structure guidance helps unevenly: alpha conditioning raises successful backbones from 102 to 202 of 284 for PDL1 and 227 to 286 of 324 for IR, but drops 120 to 116 of 164 for BHRF1",
+        "Two targets stay near zero under every condition: 5 of 164 backbones for the SARS-CoV-2 RBD and 2 of 284 for TNF-alpha",
+        "The beta condition scores below unguided PartiDesign throughout"
+      ]
+    }
+  ]
+}

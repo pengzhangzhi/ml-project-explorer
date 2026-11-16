@@ -1,0 +1,121 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "PartiDesign: two trainings, the second with the first frozen",
+    "subtitle": "The autoencoder learns a local latent; the flow matcher learns to generate it",
+    "output": "training.html",
+    "quality_profile": "showcase"
+  },
+  "mainPath": [
+    "vae",
+    "freeze",
+    "fm",
+    "epoch"
+  ],
+  "states": [
+    {
+      "id": "vae",
+      "type": "start",
+      "label": "Train the encoder",
+      "sublabel": "32 Ascend devices",
+      "tag": "identity and atoms"
+    },
+    {
+      "id": "freeze",
+      "type": "active",
+      "label": "Freeze the encoder",
+      "sublabel": "latents are fixed",
+      "tag": "denoiser only"
+    },
+    {
+      "id": "fm",
+      "type": "active",
+      "label": "Match the flow",
+      "sublabel": "centers, latents",
+      "tag": "one time per part"
+    },
+    {
+      "id": "epoch",
+      "type": "decision",
+      "label": "Epoch boundary",
+      "sublabel": "validate, save",
+      "tag": "EMA 0.999"
+    },
+    {
+      "id": "next",
+      "type": "active",
+      "label": "Next epoch",
+      "sublabel": "100 scheduled",
+      "tag": "10,000 steps"
+    },
+    {
+      "id": "done",
+      "type": "success",
+      "label": "Denoiser trained",
+      "sublabel": "about one month",
+      "tag": "128 Ascend 910B"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "vae",
+      "to": "freeze"
+    },
+    {
+      "from": "freeze",
+      "to": "fm"
+    },
+    {
+      "from": "fm",
+      "to": "epoch"
+    },
+    {
+      "from": "epoch",
+      "to": "done",
+      "label": "ends",
+      "variant": "emphasis"
+    },
+    {
+      "from": "epoch",
+      "to": "next",
+      "label": "continue"
+    },
+    {
+      "from": "next",
+      "to": "fm",
+      "label": "same VAE",
+      "note": "the autoencoder is never updated again after it is frozen"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Why there are two trainings and not one",
+      "items": [
+        "The autoencoder learns an eight-dimensional latent per token: for a polymer residue it encodes identity, canonical atom coordinates, local geometry and torsions; for a ligand atom, element, charge and degree. Encoder and decoder are 12 Transformer layers each, token width 768",
+        "Its loss sums polymer coordinate error, polymer identity, ligand element, bond and charge cross-entropies, plus a KL term weighted 1e-4 with annealing disabled",
+        "The flow matcher then learns to transport Gaussian noise into the joint space of token centers and those latents, with the autoencoder held fixed and its posterior sample used as the clean endpoint. Generating structure and identity becomes one problem instead of two"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "The part that makes co-design work",
+      "items": [
+        "Centers and latents get independent noise times: tc from a mixture of uniform and Beta(1.9, 1.0), tz from uniform and Beta(1.0, 1.5). The model therefore learns global arrangement and local chemical identity at their own rates rather than sharing one schedule",
+        "The 14-layer denoiser (token width 768, 12 heads, pair width 256) uses pair-biased attention over every design and context token, so identity and geometry update against their surroundings together",
+        "Self-conditioning runs on half of training forwards: a no-gradient pass predicts a clean endpoint, which is detached and fed back in",
+        "Iterative pair updates and triangular multiplication are switched off in this configuration, which is where the claimed efficiency over an AlphaFold 3-like stack comes from"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "A third network, trained separately",
+      "items": [
+        "PartiScore is a mixture density network that ranks finished interfaces. It predicts a ten-component Gaussian mixture over the distance between token pairs from different molecules, trained by distance likelihood on contacts within 7 A",
+        "It uses no binding-affinity labels, no decoy classification and no contrastive negative poses; docking decoys are used only for monitoring",
+        "32 Ascend devices, global batch 256, up to 100 epochs of 1,000 steps. It reads structures directly and needs no VAE encoding"
+      ]
+    }
+  ]
+}

@@ -52,7 +52,11 @@ Every number in it was measured by a failing run, not guessed.
 
 ## Examples
 
-`examples/germinal-multi` is the four-panel reference: an antibody design paper that trains nothing, which is the case the structure has to bend to honestly. It passes all four gates, browser-check included.
+`examples/partidesign` is the reference for a project that trains: a unified biomolecular co-design model whose training panel is two networks in sequence, the first frozen before the second starts, with a third trained separately. Two repair rounds, both legibility.
+
+`examples/germinal-multi` is the reference for a project that trains **nothing** — an antibody design paper whose training panel is an inference-time optimization loop. It is the case the four-panel structure has to bend to honestly, and the reason the contract says to keep all four panels rather than drop the empty one.
+
+Both pass all four gates, browser-check included.
 
 `examples/legacy-three-panel` holds two pages built under the earlier contract, kept as `dataflow` layout references. Their structure is superseded; see the note in that folder.
 

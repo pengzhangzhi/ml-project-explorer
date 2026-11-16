@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "PartiDesign: what the model was trained on",
+    "subtitle": "Eleven sources, reweighted per modality, cropped to 512 tokens",
+    "output": "data-pipeline.html",
+    "viewBox": [820, 460],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "Sources" },
+    { "label": "Preset" },
+    { "label": "Share of sampling" }
+  ],
+  "nodes": [
+    { "id": "prot", "type": "database", "label": "Protein sources", "sublabel": "AFDB, Teddymer, PDB", "stage": 0, "row": 0, "width": 140, "height": 58 },
+    { "id": "nuc", "type": "database", "label": "Nucleic and ligand", "sublabel": "NuFold, PLINDER, PDB", "stage": 0, "row": 1, "width": 140, "height": 58 },
+
+    { "id": "pprep", "type": "backend", "label": "Protein preset", "sublabel": "six sources reweighted", "stage": 1, "row": 0, "width": 140, "height": 58 },
+    { "id": "nprep", "type": "backend", "label": "Other presets", "sublabel": "one modality at a time", "stage": 1, "row": 1, "width": 140, "height": 58 },
+
+    { "id": "pshare", "type": "cloud", "label": "55% protein", "sublabel": "of the universal mix", "stage": 2, "row": 0, "width": 140, "height": 58 },
+    { "id": "nshare", "type": "cloud", "label": "45% nucleic, ligand", "sublabel": "23.5% and 21.5%", "stage": 2, "row": 1, "width": 140, "height": 58 }
+  ],
+  "flows": [
+    { "id": "f-p1", "from": "prot", "to": "pprep", "label": "weighted", "classification": "with replacement", "route": "straight", "labelDy": -34 },
+    { "id": "f-p2", "from": "pprep", "to": "pshare", "label": "primary", "classification": "design endpoint", "variant": "emphasis", "route": "straight", "labelDy": -34 },
+    { "id": "f-n1", "from": "nuc", "to": "nprep", "label": "weighted", "classification": "with replacement", "route": "straight", "labelDy": -34 },
+    { "id": "f-n2", "from": "nprep", "to": "nshare", "label": "primary", "classification": "design endpoint", "route": "straight", "labelDy": -34 }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "The eleven sources, and their weights in the universal mixture",
+      "items": [
+        "Predicted structure: AFDB-v4 monomers at 20% (588,571 Genie 2 representatives, pLDDT at least 80), Teddymer synthetic interfaces at 20% (519,558 structures), NuFold-DB predicted RNA at 5%",
+        "Experimental assemblies from the Protenix-v2 PDB index, released before 2025-07-01 at 4.5 A or better: protein-protein 6%, nucleic monomers 5%, protein-nucleic 15%, nucleic-nucleic 4%, nucleic-ligand 4%, cyclic peptides 4%",
+        "Docked and curated ligand complexes: PLINDER 2024-04/v1 at 15%, CrossDocked2020 v1.3 positive poses at 12%",
+        "Weights apply to sampling requests, not to accepted examples: a source whose example fails preparation is replaced, which shifts the realized distribution"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "What one training example looks like",
+      "items": [
+        "At most 512 tokens. A polymer residue is one token; each ligand heavy atom is its own token. Ligands are never cut in half",
+        "Interface crops are kept only if both chosen endpoints survive and at least one resolved heavy-atom contact falls within 0.5 nm. Design segments span 50 to 256 tokens with 10 tokens of anchor padding",
+        "Conditions are drawn at random so the one model learns every control: motifs at 0.25 full-token and 0.15 selected-atom for proteins, visible identity 20% of the time, fine secondary structure 16%, hotspots within 0.8 nm",
+        "No MSA and no template features anywhere in training"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "How the held-out data was separated, and how it was not",
+      "items": [
+        "RecentPDB and PoseBusters supply the validation examples, and training excludes PDB entries that appear in them",
+        "That exclusion acts at the PDB-entry level only. The paper states it does not implement homology-based or ligand-scaffold-based partitioning, and that CrossDocked2020 and the PDB subsets can contain related structures",
+        "So a design target can resemble a training structure without sharing its PDB ID, and the benchmark numbers should be read with that in mind"
+      ]
+    }
+  ]
+}
